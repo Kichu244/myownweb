@@ -5,7 +5,7 @@ import { withBasePath } from '../navigation'
 import { profile, skills } from '../data'
 import { TypingText } from './NeuralHero'
 
-export default function AboutIdentity() {
+export default function AboutIdentity({ homePage = false }: { homePage?: boolean }) {
   const reduceMotion = useReducedMotion()
   const focusGroups = [skills[0], skills[1], skills[3]]
   const [conversationVisible, setConversationVisible] = useState(false)
@@ -73,8 +73,8 @@ export default function AboutIdentity() {
           />      
         </aside>
         <nav className="identity-actions" aria-label="Explore more about me">
-          <a className="button button-primary" href={withBasePath('/skills')}>View my skills <ArrowRight size={15} aria-hidden="true" /></a>
-          <a className="button button-quiet" href={withBasePath('/experience')}>View my experience <ArrowRight size={15} aria-hidden="true" /></a>
+          <a className="button button-primary" href={homePage ? '#skills' : withBasePath('/skills')}>View my skills <ArrowRight size={15} aria-hidden="true" /></a>
+          <a className="button button-quiet" href={homePage ? '#experience' : withBasePath('/experience')}>View my experience <ArrowRight size={15} aria-hidden="true" /></a>
         </nav>
       </div>
 

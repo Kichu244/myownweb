@@ -1,7 +1,8 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { education, experience } from '../data'
+import { withBasePath } from '../navigation'
 
-export default function ExperienceEducation() {
+export default function ExperienceEducation({ homePage = false }: { homePage?: boolean }) {
   const reduceMotion = useReducedMotion()
 
   return <section className="experience section-pad" id="experience">
@@ -25,7 +26,7 @@ export default function ExperienceEducation() {
                   <span className="career-project-label">INTERNSHIP PROJECT</span>
                   <h5>{item.projectTitle}</h5>
                   <p>{item.projectDescription}</p>
-                  {item.projectId && <a className="career-project-link" href={`/projects#${item.projectId}`}>View full S2K project details <span aria-hidden="true">↗</span></a>}
+                  {item.projectId && <a className="career-project-link" href={homePage ? `#${item.projectId}` : `${withBasePath('/projects')}#${item.projectId}`}>View full S2K project details <span aria-hidden="true">↗</span></a>}
                   <ul>{item.projectHighlights?.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul>
                   <span className="career-project-stack">{item.projectStack?.join(' / ')}</span>
                 </div>}

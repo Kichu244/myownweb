@@ -65,14 +65,14 @@ export function ContactSection() {
   </section>
 }
 
-export function ContactFooter() {
+export function ContactFooter({ homePage = false }: { homePage?: boolean }) {
   return <footer className="footer contact-footer">
     <div className="container footer-inner">
-      <a className="footer-brand" href={withBasePath('/')} aria-label={`${profile.name}, back to home`}><span className="brand-mark"><UserRound aria-hidden="true" /></span><span>{profile.name}</span></a>
-      <nav className="footer-nav" aria-label="Footer navigation">{footerLinks.map(([label, href]) => <a href={withBasePath(href)} key={href}>{label}</a>)}</nav>
+      <a className="footer-brand" href={homePage ? '#home' : withBasePath('/')} aria-label={`${profile.name}, back to home`}><span className="brand-mark"><UserRound aria-hidden="true" /></span><span>{profile.name}</span></a>
+      <nav className="footer-nav" aria-label="Footer navigation">{footerLinks.map(([label, href]) => <a href={homePage ? `#${href.slice(1)}` : withBasePath(href)} key={href}>{label}</a>)}</nav>
       <a className="footer-linkedin" href={profile.linkedin} target="_blank" rel="noopener noreferrer">LINKEDIN <ArrowUpRight aria-hidden="true" size={13} /></a>
       <span className="footer-copyright">© {new Date().getFullYear()}</span>
-      <a className="back-top" href={withBasePath('/')}>BACK TO HOME <ArrowUpRight size={14} aria-hidden="true" /></a>
+      <a className="back-top" href={homePage ? '#home' : withBasePath('/')}>BACK TO HOME <ArrowUpRight size={14} aria-hidden="true" /></a>
     </div>
   </footer>
 }

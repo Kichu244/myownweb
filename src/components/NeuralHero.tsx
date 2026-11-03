@@ -7,6 +7,7 @@ import CircuitGraphic from './CircuitGraphic'
 type NeuralHeroProps = {
   name: string
   role: string
+  homePage?: boolean
 }
 
 export function TypingText({ text, active, delay = 0, speed = 22, emphasis, reduceMotion = false }: {
@@ -50,7 +51,7 @@ export function TypingText({ text, active, delay = 0, speed = 22, emphasis, redu
   </span>
 }
 
-export default function NeuralHero({ name, role }: NeuralHeroProps) {
+export default function NeuralHero({ name, role, homePage = false }: NeuralHeroProps) {
   const [photoLoaded, setPhotoLoaded] = useState(false)
   const [photoUnavailable, setPhotoUnavailable] = useState(false)
   const [introVisible, setIntroVisible] = useState(false)
@@ -88,8 +89,8 @@ export default function NeuralHero({ name, role }: NeuralHeroProps) {
           </div>
           <p className="hero-description"><TypingText text="Python and Odoo developer based in Bengaluru, focused on building practical software, improving ERP workflows, and exploring data-driven applications and connected devices." active delay={450} speed={15} reduceMotion={reduceMotion} /></p>
           <div className="hero-actions">
-            <a href={withBasePath('/projects')} className="button button-primary">Explore My Work <ArrowRight size={16} /></a>
-            <a href={withBasePath('/contact')} className="button button-quiet">Let&#39;s Connect <ArrowUpRight size={16} /></a>
+            <a href={homePage ? '#projects' : withBasePath('/projects')} className="button button-primary">Explore My Work <ArrowRight size={16} /></a>
+            <a href={homePage ? '#contact' : withBasePath('/contact')} className="button button-quiet">Let&#39;s Connect <ArrowUpRight size={16} /></a>
           </div>
           <div className="hero-footnote"><span className="footnote-line" /> BENGALURU, INDIA</div>
         </motion.div>
