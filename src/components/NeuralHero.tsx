@@ -107,7 +107,7 @@ export default function NeuralHero({ name, role }: NeuralHeroProps) {
           <div className="portrait-media">
             {!photoUnavailable && <img
               className={`portrait-image${photoLoaded ? ' is-loaded' : ''}`}
-              src="/images/mypic2.png"
+              src={`${import.meta.env.BASE_URL}images/mypic2.png`}
               alt={`Portrait of ${name}`}
               loading="eager"
               fetchPriority="high"

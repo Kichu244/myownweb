@@ -65,7 +65,11 @@ export default function AboutIdentity() {
     <div className="container identity-layout">
       <div className="identity-visual-column">
         <aside className="identity-visual glass-crystal">
-          <img className="identity-photo" src="/images/mypic2.png" alt={`${profile.name}, portrait`} />
+          <img
+            className="identity-photo"
+            src={`${import.meta.env.BASE_URL}images/mypic2.png`}
+            alt={`${profile.name}, portrait`}
+          />      
         </aside>
         <nav className="identity-actions" aria-label="Explore more about me">
           <a className="button button-primary" href="/skills">View my skills <ArrowRight size={15} aria-hidden="true" /></a>
