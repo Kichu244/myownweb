@@ -8,9 +8,9 @@ import SkillsNetwork from './components/SkillsNetwork'
 import AboutIdentity from './components/AboutIdentity'
 import ExperienceEducation from './components/ExperienceEducation'
 import { ContactFooter, ContactSection } from './components/ContactExperience'
+import { pageFromPath, withBasePath } from './navigation'
 
 const nav = [['About', '/about'], ['Skills', '/skills'], ['Projects', '/projects'], ['Experience', '/experience'], ['Contact', '/contact']]
-const pageFromPath = (path: string) => path === '/' ? 'home' : path.replace(/^\/+|\/+$/g, '')
 function ProjectIcon({ variant }: { variant: Project['visualization'] }) {
   const Icon = variant === 'attendance-flow' ? ClipboardCheck
     : variant === 'ai-processing' ? BrainCircuit
@@ -48,10 +48,10 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
     <div className="container">
       <div className="home-overview-heading" ref={overviewRef}><h2>A little<br /><span>about me.</span></h2><h3>Curious by nature, learning through projects</h3><p><TypingText text={`I'm ${profile.name}, based in Bengaluru, India. I enjoy exploring how software and connected devices work, and learning by building projects with Python, Odoo, data workflows, and web technologies.`} active={overviewVisible} delay={350} speed={18} reduceMotion={reduceMotion} /></p></div>
       <div className="home-overview-grid">
-        <a className="home-overview-card glass-frosted" href="/about"><h3>About me</h3><p>{profile.role} · Bengaluru</p><span className="home-overview-link">More about me <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-frosted" href="/skills"><h3>Skills</h3><p>{skills.slice(0, 3).map((group) => group.name).join(' · ')}</p><span className="home-overview-link">Explore skills <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-crystal" href="/projects"><h3>Projects</h3><p>ERP, data, web, and IoT experiments.</p><span className="home-overview-link">Browse projects <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-frosted" href="/experience"><h3>Experience & education</h3><p>AutoChip India · Neopraxis · BCA Cyber Security</p><span className="home-overview-link">View my journey <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-frosted" href={withBasePath('/about')}><h3>About me</h3><p>{profile.role} · Bengaluru</p><span className="home-overview-link">More about me <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-frosted" href={withBasePath('/skills')}><h3>Skills</h3><p>{skills.slice(0, 3).map((group) => group.name).join(' · ')}</p><span className="home-overview-link">Explore skills <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-crystal" href={withBasePath('/projects')}><h3>Projects</h3><p>ERP, data, web, and IoT experiments.</p><span className="home-overview-link">Browse projects <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-frosted" href={withBasePath('/experience')}><h3>Experience & education</h3><p>AutoChip India · Neopraxis · BCA Cyber Security</p><span className="home-overview-link">View my journey <ArrowRight size={15} /></span></a>
       </div>
     </div>
   </section>
@@ -170,8 +170,8 @@ function App() {
     <a className="skip-link" href="#main">Skip to content</a>
     <header className={`nav-shell${isScrolled ? ' scrolled' : ''}${navHidden ? ' nav-hidden' : ''}`}>
       <nav className="nav container glass-frosted" aria-label="Main navigation">
-        <a className="brand" href="/" aria-label="Christopher Sam Saji home"><span className="brand-mark"><UserRound aria-hidden="true" /></span><span className="brand-name">CHRISTOPHER SAM SAJI</span></a>
-       <div className="desktop-nav">{nav.map(([label, href]) => <a className={active === href ? 'active' : ''} aria-current={active === href ? 'page' : undefined} href={href} key={label}>
+        <a className="brand" href={withBasePath('/')} aria-label="Christopher Sam Saji home"><span className="brand-mark"><UserRound aria-hidden="true" /></span><span className="brand-name">CHRISTOPHER SAM SAJI</span></a>
+       <div className="desktop-nav">{nav.map(([label, href]) => <a className={active === href ? 'active' : ''} aria-current={active === href ? 'page' : undefined} href={withBasePath(href)} key={label}>
           {label}{active === href && <span aria-hidden="true" className="nav-active-indicator" />}
         </a>)}</div>
         <div className="nav-actions">
@@ -182,7 +182,7 @@ function App() {
         </div>
       </nav>
       {menuOpen && <nav id="mobile-navigation" aria-label="Mobile navigation" className="mobile-menu">
-        {nav.map(([label, href], i) => <a className={active === href ? 'active' : ''} aria-current={active === href ? 'page' : undefined} href={href} key={label} onClick={() => setMenuOpen(false)}><span>0{i + 1}</span>{label}<ArrowUpRight size={17} /></a>)}<p>Bengaluru, India <span>·</span> Open to learning</p>
+        {nav.map(([label, href], i) => <a className={active === href ? 'active' : ''} aria-current={active === href ? 'page' : undefined} href={withBasePath(href)} key={label} onClick={() => setMenuOpen(false)}><span>0{i + 1}</span>{label}<ArrowUpRight size={17} /></a>)}<p>Bengaluru, India <span>·</span> Open to learning</p>
       </nav>}
     </header>
 
@@ -198,7 +198,7 @@ function App() {
           {isHome && <section className="home-second-screen" aria-label="Quick introduction and links">
             <HomeOverview reduceMotion={reduceMotion} />
             <ContactFooter />
-            <section className="home-contact-strip"><div className="container"><span className="eyebrow">HAVE A PROJECT IN MIND?</span><h2>Let’s make something useful.</h2><a className="button button-primary" href="/contact">Get in touch <ArrowUpRight size={16} /></a></div></section>
+            <section className="home-contact-strip"><div className="container"><span className="eyebrow">HAVE A PROJECT IN MIND?</span><h2>Let’s make something useful.</h2><a className="button button-primary" href={withBasePath('/contact')}>Get in touch <ArrowUpRight size={16} /></a></div></section>
           </section>}
         </motion.div>
       </AnimatePresence>

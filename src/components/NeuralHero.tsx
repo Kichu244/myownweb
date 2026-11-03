@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
+import { withBasePath } from '../navigation'
 import CircuitGraphic from './CircuitGraphic'
 
 type NeuralHeroProps = {
@@ -87,8 +88,8 @@ export default function NeuralHero({ name, role }: NeuralHeroProps) {
           </div>
           <p className="hero-description"><TypingText text="Python and Odoo developer based in Bengaluru, focused on building practical software, improving ERP workflows, and exploring data-driven applications and connected devices." active delay={450} speed={15} reduceMotion={reduceMotion} /></p>
           <div className="hero-actions">
-            <a href="/projects" className="button button-primary">Explore My Work <ArrowRight size={16} /></a>
-            <a href="/contact" className="button button-quiet">Let&#39;s Connect <ArrowUpRight size={16} /></a>
+            <a href={withBasePath('/projects')} className="button button-primary">Explore My Work <ArrowRight size={16} /></a>
+            <a href={withBasePath('/contact')} className="button button-quiet">Let&#39;s Connect <ArrowUpRight size={16} /></a>
           </div>
           <div className="hero-footnote"><span className="footnote-line" /> BENGALURU, INDIA</div>
         </motion.div>

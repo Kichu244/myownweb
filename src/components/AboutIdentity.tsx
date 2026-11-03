@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
+import { withBasePath } from '../navigation'
 import { profile, skills } from '../data'
 import { TypingText } from './NeuralHero'
 
@@ -72,8 +73,8 @@ export default function AboutIdentity() {
           />      
         </aside>
         <nav className="identity-actions" aria-label="Explore more about me">
-          <a className="button button-primary" href="/skills">View my skills <ArrowRight size={15} aria-hidden="true" /></a>
-          <a className="button button-quiet" href="/experience">View my experience <ArrowRight size={15} aria-hidden="true" /></a>
+          <a className="button button-primary" href={withBasePath('/skills')}>View my skills <ArrowRight size={15} aria-hidden="true" /></a>
+          <a className="button button-quiet" href={withBasePath('/experience')}>View my experience <ArrowRight size={15} aria-hidden="true" /></a>
         </nav>
       </div>
 
