@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
-import { ArrowRight, ArrowUpRight, BrainCircuit, ClipboardCheck, Cpu, KeyRound, Menu, PanelsTopLeft, Smartphone, UserRound, Wifi, X } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, BrainCircuit, ClipboardCheck, Cpu, KeyRound, Menu, Moon, PanelsTopLeft, Smartphone, Sun, UserRound, Wifi, X } from 'lucide-react'
 import { profile, projects, skills, type Project } from './data'
 import NeuralHero, { TypingText } from './components/NeuralHero'
 import ProjectExplorer from './components/ProjectExplorer'
@@ -71,6 +71,7 @@ function ProjectsPage({ reduceMotion, filter, setFilter, onSelect }: { reduceMot
 
 function App() {
   const [path, setPath] = useState(() => window.location.pathname)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => localStorage.getItem('portfolio-theme') === 'dark' ? 'dark' : 'light')
   const page = pageFromPath(path)
   const [menuOpen, setMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(() => window.scrollY > 16)
@@ -83,6 +84,13 @@ function App() {
   const reduceMotion = useReducedMotion()
   const active = page === 'home' ? '' : `/${page}`
 
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
+  }, [theme])
+  useEffect(() => {
+    localStorage.setItem('portfolio-theme', theme)
+  }, [theme])
   useEffect(() => {
     document.title = page === 'home' ? `${profile.name} | Developer Portfolio` : `${page[0]?.toUpperCase()}${page.slice(1)} | ${profile.name}`
     document.body.style.overflow = selected ? 'hidden' : ''
@@ -166,7 +174,12 @@ function App() {
        <div className="desktop-nav">{nav.map(([label, href]) => <a className={active === href ? 'active' : ''} aria-current={active === href ? 'page' : undefined} href={href} key={label}>
           {label}{active === href && <span aria-hidden="true" className="nav-active-indicator" />}
         </a>)}</div>
-        <div className="nav-actions"><button ref={menuToggleRef} className="menu-toggle" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button></div>
+        <div className="nav-actions">
+          <button className="theme-toggle" type="button" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} aria-pressed={theme === 'dark'} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+            {theme === 'light' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+          </button>
+          <button ref={menuToggleRef} className="menu-toggle" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} aria-controls="mobile-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+        </div>
       </nav>
       {menuOpen && <nav id="mobile-navigation" aria-label="Mobile navigation" className="mobile-menu">
         {nav.map(([label, href], i) => <a className={active === href ? 'active' : ''} aria-current={active === href ? 'page' : undefined} href={href} key={label} onClick={() => setMenuOpen(false)}><span>0{i + 1}</span>{label}<ArrowUpRight size={17} /></a>)}<p>Bengaluru, India <span>·</span> Open to learning</p>
