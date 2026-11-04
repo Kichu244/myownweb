@@ -3,13 +3,12 @@ import type { SwarmActivity } from './swarmTypes'
 
 type SwarmTopbarProps = {
   section: string
-  cursorCount: number
   activity: SwarmActivity
   onExit: () => void
   onToggleScroll: () => void
 }
 
-export default function SwarmTopbar({ section, cursorCount, activity, onExit, onToggleScroll }: SwarmTopbarProps) {
+export default function SwarmTopbar({ section, activity, onExit, onToggleScroll }: SwarmTopbarProps) {
   return <header className="swarm-topbar">
     <div className="swarm-brand"><Orbit aria-hidden="true" /><strong>SWARM STUDIO</strong><span className="swarm-live"><i /> ACTIVE</span></div>
     <div className="swarm-status-main">
@@ -17,7 +16,11 @@ export default function SwarmTopbar({ section, cursorCount, activity, onExit, on
       <span className="swarm-section">{section}</span>
     </div>
     <div className="swarm-status-end">
-      <span className="swarm-cursor-count">{String(activity.runningTasks).padStart(2, '0')} / {String(cursorCount).padStart(2, '0')} ACTIVE</span>
+      <span className="swarm-cursor-count" title={`${activity.totalAgents} total agents`}>{activity.totalAgents} AGENTS</span>
+      <span className="swarm-agent-count is-working" title="Currently constructing">{activity.workingAgents} WORKING</span>
+      <span className="swarm-agent-count is-coordinating" title="Moving or collecting tools">{activity.coordinatingAgents} COORDINATING</span>
+      <span className="swarm-agent-count is-waiting" title="Available for work">{activity.waitingAgents} WAITING</span>
+      {activity.followingAgents > 0 && <span className="swarm-agent-count is-following" title="Following the visitor cursor">{activity.followingAgents} FOLLOWING</span>}
       <span className="swarm-animation-state">{activity.animationState}</span>
       <span className="swarm-operation" title={`${activity.operation} · ${activity.completedTasks}/${activity.totalTasks} operations`}>{activity.operation}</span>
       <span className="swarm-progress" aria-label={`Construction progress ${activity.progress}%`}><i style={{ transform: `scaleX(${activity.progress / 100})` }} /></span>

@@ -44,7 +44,7 @@ export type SwarmTask = {
   id: string
   target: SwarmElement
   kind: SwarmTargetKind | 'button' | 'decoration'
-  operation: 'type' | 'draw' | 'image' | 'colour' | 'align' | 'icon'
+  operation: 'type' | 'draw' | 'image' | 'colour' | 'align' | 'icon' | 'transform'
   tool: SwarmTool
   description: string
   status: 'queued' | 'collecting' | 'working' | 'complete'
@@ -62,6 +62,11 @@ export type SwarmActivity = {
   cursors: SwarmCursorState[]
   operation: string
   runningTasks: number
+  totalAgents: number
+  workingAgents: number
+  coordinatingAgents: number
+  waitingAgents: number
+  followingAgents: number
   progress: number
   completedTasks: number
   totalTasks: number

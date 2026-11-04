@@ -6,7 +6,7 @@ import SwarmLoader, { type SwarmPoint } from './SwarmLoader'
 import type { SwarmPhase } from './swarmTypes'
 
 const SwarmStudio = lazy(() => import('./SwarmStudio'))
-const getAgentCount = () => window.matchMedia('(max-width: 760px)').matches ? 8 : 15
+const getAgentCount = () => 15
 
 export default function SwarmController() {
   const [phase, setPhase] = useState<SwarmPhase>('inactive')
@@ -17,6 +17,7 @@ export default function SwarmController() {
   const finishLoading = useCallback(() => setPhase('active'), [])
 
   const exitStudio = () => {
+    document.documentElement.classList.remove('swarm-canvas-active')
     setPhase('inactive')
     window.requestAnimationFrame(() => activateRef.current?.focus())
   }
@@ -32,6 +33,9 @@ export default function SwarmController() {
       disabled={active}
       onClick={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect()
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.classList.add('swarm-canvas-active')
+        }
         setAgentCount(getAgentCount())
         setSpawnOrigin({ x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 })
         window.dispatchEvent(new Event('swarm:activate'))

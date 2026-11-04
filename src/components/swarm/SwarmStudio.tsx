@@ -21,6 +21,11 @@ const initialActivity: SwarmActivity = {
   cursors: swarmIdentities.map((identity) => ({ ...identity, tool: null, operation: 'Waiting for task', active: false, state: 'initializing' })),
   operation: 'Deploying agents',
   runningTasks: 0,
+  totalAgents: swarmIdentities.length,
+  workingAgents: 0,
+  coordinatingAgents: 0,
+  waitingAgents: swarmIdentities.length,
+  followingAgents: 0,
   progress: 0,
   completedTasks: 0,
   totalTasks: 0,
@@ -49,6 +54,8 @@ export default function SwarmStudio({ origin, agentCount, onExit }: { origin: Sw
   const [activity, setActivity] = useState<SwarmActivity>(() => ({
     ...initialActivity,
     cursors: initialActivity.cursors.slice(0, cursorCount),
+    totalAgents: cursorCount,
+    waitingAgents: cursorCount,
   }))
   const cursorRefs = useRef<(HTMLSpanElement | null)[]>([])
   const frameRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -57,6 +64,10 @@ export default function SwarmStudio({ origin, agentCount, onExit }: { origin: Sw
   const moveToolRef = useRef<HTMLDivElement>(null)
   const engineRef = useRef<SwarmCoordinator | null>(null)
   const reduceMotion = useReducedMotion() ?? false
+  const exitStudio = () => {
+    engineRef.current?.stop()
+    onExit()
+  }
 
   useEffect(() => {
     const cursors = cursorRefs.current.slice(0, cursorCount).filter((cursor): cursor is HTMLSpanElement => cursor !== null)
@@ -79,9 +90,8 @@ export default function SwarmStudio({ origin, agentCount, onExit }: { origin: Sw
   return <div className={`swarm-studio${reduceMotion ? ' is-reduced-motion' : ''}`} ref={(element) => { toolbarRef.current = element }}>
     <SwarmTopbar
       section={sectionLabels[sectionId] ?? `${sectionId.toUpperCase()} SECTION`}
-      cursorCount={cursorCount}
       activity={activity}
-      onExit={onExit}
+      onExit={exitStudio}
       onToggleScroll={() => engineRef.current?.toggleAutoScroll()}
     />
     <SwarmToolbar cursors={activity.cursors} registerMoveTool={(element) => { moveToolRef.current = element }} />
