@@ -62,26 +62,27 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
     return () => window.clearTimeout(timer)
   }, [conversationVisible, conversationComplete, lineIndex, reduceMotion])
 
-  return <section className="about section-pad" id="about">
-    <div className="container identity-layout">
+  return <section className="about section-pad" id="about" data-swarm-section="about">
+    <div className="container identity-layout" data-swarm="container">
       <div className="identity-visual-column">
-        <aside className="identity-visual glass-crystal">
+        <aside className="identity-visual glass-crystal" data-swarm="image">
           <img
             className="identity-photo"
             src={`${import.meta.env.BASE_URL}images/mypic2.png`}
             alt={`${profile.name}, portrait`}
           />      
         </aside>
-        <nav className="identity-actions" aria-label="Explore more about me">
+        <nav className="identity-actions" data-swarm="layout" aria-label="Explore more about me">
           <a className="button button-primary" href={homePage ? '#skills' : withBasePath('/skills')}>View my skills <ArrowRight size={15} aria-hidden="true" /></a>
           <a className="button button-quiet" href={homePage ? '#experience' : withBasePath('/experience')}>View my experience <ArrowRight size={15} aria-hidden="true" /></a>
         </nav>
       </div>
 
       <motion.div className="identity-copy" initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduceMotion ? 0 : .55 }}>
-        <h2>Who am <span>I&nbsp;?&nbsp;</span></h2>
+        <h2 data-swarm="heading">Who am <span>I&nbsp;?&nbsp;</span></h2>
         <motion.div
           className="identity-conversation"
+          data-swarm="text"
           ref={conversationRef}
           aria-label="A personal introduction"
           aria-live="polite"
@@ -117,7 +118,7 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
             >{line} </motion.span>)}</motion.p>}
           </AnimatePresence>
         </motion.div>
-        <div className="identity-focus">
+        <div className="identity-focus" data-swarm="style">
           {!conversationComplete && <motion.button
             className="identity-skip"
             type="button"
@@ -129,7 +130,7 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
           <span className="eyebrow">CURRENT AREAS OF FOCUS</span>
           <div>{focusGroups.map((group) => <span className="identity-focus-chip" key={group.name}><i aria-hidden="true" />{group.name}</span>)}</div>
         </div>
-        <div className="identity-location"><span className="location-dot" />BENGALURU, KARNATAKA, INDIA</div>
+        <div className="identity-location" data-swarm="style"><span className="location-dot" />BENGALURU, KARNATAKA, INDIA</div>
       </motion.div>
     </div>
   </section>

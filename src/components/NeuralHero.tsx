@@ -67,8 +67,8 @@ export default function NeuralHero({ name, role, homePage = false }: NeuralHeroP
   }, [reduceMotion])
 
   return (
-    <section className="hero neural-hero" id="home">
-      <div className="hero-atmosphere" aria-hidden="true">
+    <section className="hero neural-hero" id="home" data-swarm-section="hero">
+      <div className="hero-atmosphere" data-swarm="style" aria-hidden="true">
         <div className="hero-grid" />
         <div className="hero-particles"><b /><b /><b /><b /><b /><b /></div>
         <div className="hero-circuit">
@@ -76,23 +76,23 @@ export default function NeuralHero({ name, role, homePage = false }: NeuralHeroP
         </div>
       </div>
 
-      <div className="container neural-hero-layout">
+      <div className="container neural-hero-layout" data-swarm="container">
         <motion.div
           className="hero-copy neural-hero-copy"
           initial={reduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduceMotion ? 0 : .65, ease: [.22, 1, .36, 1] }}
         >
-          <h1>Building intelligent<br /><span>systems that connect.</span></h1>
-          <div className="hero-tech-tags" aria-label="Professional areas and technologies">
+          <h1 data-swarm="heading">Building intelligent<br /><span>systems that connect.</span></h1>
+          <div className="hero-tech-tags" data-swarm="style" aria-label="Professional areas and technologies">
             {['Python', 'Odoo', 'ERP', 'Developer', 'IoT', 'ESP32'].map((tag) => <span className="hero-tech-tag" key={tag}>{tag}</span>)}
           </div>
-          <p className="hero-description"><TypingText text="Python and Odoo developer based in Bengaluru, focused on building practical software, improving ERP workflows, and exploring data-driven applications and connected devices." active delay={450} speed={15} reduceMotion={reduceMotion} /></p>
-          <div className="hero-actions">
+          <p className="hero-description" data-swarm="text"><TypingText text="Python and Odoo developer based in Bengaluru, focused on building practical software, improving ERP workflows, and exploring data-driven applications and connected devices." active delay={450} speed={15} reduceMotion={reduceMotion} /></p>
+          <div className="hero-actions" data-swarm="layout">
             <a href={homePage ? '#projects' : withBasePath('/projects')} className="button button-primary">Explore My Work <ArrowRight size={16} /></a>
             <a href={homePage ? '#contact' : withBasePath('/contact')} className="button button-quiet">Let&#39;s Connect <ArrowUpRight size={16} /></a>
           </div>
-          <div className="hero-footnote"><span className="footnote-line" /> BENGALURU, INDIA</div>
+          <div className="hero-footnote" data-swarm="style"><span className="footnote-line" /> BENGALURU, INDIA</div>
         </motion.div>
 
         <motion.div
@@ -102,11 +102,11 @@ export default function NeuralHero({ name, role, homePage = false }: NeuralHeroP
           transition={{ duration: reduceMotion ? 0 : .75, delay: reduceMotion ? 0 : .1, ease: [.2, .75, .25, 1] }}
         >
           <div className="hero-intro-list" aria-label="A short introduction">
-            <div className="hero-intro-card"><span className="hero-intro-dots" aria-hidden="true"><i /><i /><i /></span><p><TypingText text={`Hi there! I'm ${name}. Welcome to my portfolio.`} emphasis={name} active={introVisible} delay={350} speed={28} reduceMotion={reduceMotion} /></p></div>
-            <div className="hero-intro-card"><span className="hero-intro-dots" aria-hidden="true"><i /><i /><i /></span><p><TypingText text={`Working as ${role} at AutoChip India, Bengaluru.`} emphasis={role} active={introVisible} delay={1350} speed={28} reduceMotion={reduceMotion} /></p></div>
-            <div className="hero-intro-card"><span className="hero-intro-dots" aria-hidden="true"><i /><i /><i /></span><p><TypingText text="Currently, I'm a trainee at AutoChip India, gaining hands-on experience in Python and Odoo development." active={introVisible} delay={2500} speed={28} reduceMotion={reduceMotion} /></p></div>
+            <div className="hero-intro-card" data-swarm="card"><span className="hero-intro-dots" aria-hidden="true"><i /><i /><i /></span><p><TypingText text={`Hi there! I'm ${name}. Welcome to my portfolio.`} emphasis={name} active={introVisible} delay={350} speed={28} reduceMotion={reduceMotion} /></p></div>
+            <div className="hero-intro-card" data-swarm="card"><span className="hero-intro-dots" aria-hidden="true"><i /><i /><i /></span><p><TypingText text={`Working as ${role} at AutoChip India, Bengaluru.`} emphasis={role} active={introVisible} delay={1350} speed={28} reduceMotion={reduceMotion} /></p></div>
+            <div className="hero-intro-card" data-swarm="card"><span className="hero-intro-dots" aria-hidden="true"><i /><i /><i /></span><p><TypingText text="Currently, I'm a trainee at AutoChip India, gaining hands-on experience in Python and Odoo development." active={introVisible} delay={2500} speed={28} reduceMotion={reduceMotion} /></p></div>
           </div>
-          <div className="portrait-media">
+          <div className="portrait-media" data-swarm="image">
             {!photoUnavailable && <img
               className={`portrait-image${photoLoaded ? ' is-loaded' : ''}`}
               src={`${import.meta.env.BASE_URL}images/mypic2.png`}

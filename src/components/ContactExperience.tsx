@@ -20,15 +20,15 @@ export function ContactSection() {
     }
   }
 
-  return <section className="contact section-pad" id="contact">
-    <div className="container contact-container">
+  return <section className="contact section-pad" id="contact" data-swarm-section="contact">
+    <div className="container contact-container" data-swarm="container">
       <motion.div className="contact-heading" initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduceMotion ? 0 : .5 }}>
-        <h2>Let’s make<br /><span>something useful.</span></h2>
-        <p>I’m interested in building useful software, exploring new technologies, and collaborating on meaningful projects.</p>
+        <h2 data-swarm="heading">Let’s make<br /><span>something useful.</span></h2>
+        <p data-swarm="text">I’m interested in building useful software, exploring new technologies, and collaborating on meaningful projects.</p>
       </motion.div>
 
-      <div className="contact-interface glass-crystal">
-        <div className="contact-signal-panel" aria-hidden="true">
+      <div className="contact-interface glass-crystal" data-swarm="card">
+        <div className="contact-signal-panel" data-swarm="image" aria-hidden="true">
           <span className="contact-signal-label">CONNECTION / AVAILABLE</span>
           <svg className="contact-signal-graphic" viewBox="0 0 560 250" focusable="false">
             <circle className="contact-signal-orbit" cx="132" cy="125" r="76" />
@@ -48,9 +48,9 @@ export function ContactSection() {
           <span className="contact-signal-foot">A DIRECT LINE TO THE PROFESSIONAL PROFILE</span>
         </div>
 
-        <div className="contact-actions">
+        <div className="contact-actions" data-swarm="card">
           <span className="eyebrow">CURRENT CONTACT ROUTE</span>
-          <a className="contact-primary-action" href={profile.linkedin} target="_blank" rel="noopener noreferrer" aria-label="Open Christopher Sam Saji’s LinkedIn profile in a new tab">
+          <a className="contact-primary-action" data-swarm="layout" href={profile.linkedin} target="_blank" rel="noopener noreferrer" aria-label="Open Christopher Sam Saji’s LinkedIn profile in a new tab">
             <span><small>PROFESSIONAL PROFILE</small><strong>Connect on LinkedIn</strong><i>Open professional profile</i></span><ArrowUpRight aria-hidden="true" />
           </a>
           <button className="contact-copy-action" type="button" onClick={copyProfile}>

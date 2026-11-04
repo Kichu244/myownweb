@@ -9,6 +9,7 @@ import SkillsNetwork from './components/SkillsNetwork'
 import AboutIdentity from './components/AboutIdentity'
 import ExperienceEducation from './components/ExperienceEducation'
 import { ContactFooter, ContactSection } from './components/ContactExperience'
+import SwarmController from './components/swarm/SwarmController'
 import { pageFromPath, withBasePath } from './navigation'
 
 const nav = [['About', 'about'], ['Skills', 'skills'], ['Projects', 'projects'], ['Experience', 'experience'], ['Contact', 'contact']]
@@ -27,7 +28,7 @@ const reveal: Variants = { hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y:
 const smoothStopProgress = (progress: number) => 2 * progress - 5 * progress ** 4 + 6 * progress ** 5 - 2 * progress ** 6
 
 function SectionTitle({ title, note }: { title: string; note?: string }) {
-  return <div className="section-title"><h2>{title}</h2>{note && <p>{note}</p>}</div>
+  return <div className="section-title"><h2 data-swarm="heading">{title}</h2>{note && <p data-swarm="text">{note}</p>}</div>
 }
 
 function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
@@ -46,14 +47,14 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
     return () => observer.disconnect()
   }, [])
 
-  return <section className="home-overview section-pad" id="home-overview" aria-label="Portfolio overview">
-    <div className="container">
-      <div className="home-overview-heading" ref={overviewRef}><h2>A little<br /><span>about me.</span></h2><h3>Curious by nature, learning through projects</h3><p><TypingText text={`I'm ${profile.name}, based in Bengaluru, India. I enjoy exploring how software and connected devices work, and learning by building projects with Python, Odoo, data workflows, and web technologies.`} active={overviewVisible} delay={350} speed={18} reduceMotion={reduceMotion} /></p></div>
+  return <section className="home-overview section-pad" id="home-overview" data-swarm-section="overview" aria-label="Portfolio overview">
+    <div className="container" data-swarm="container">
+      <div className="home-overview-heading" ref={overviewRef}><h2 data-swarm="heading">A little<br /><span>about me.</span></h2><h3 data-swarm="text">Curious by nature, learning through projects</h3><p data-swarm="text"><TypingText text={`I'm ${profile.name}, based in Bengaluru, India. I enjoy exploring how software and connected devices work, and learning by building projects with Python, Odoo, data workflows, and web technologies.`} active={overviewVisible} delay={350} speed={18} reduceMotion={reduceMotion} /></p></div>
       <div className="home-overview-grid">
-        <a className="home-overview-card glass-frosted" href="#about"><h3>About me</h3><p>{profile.role} · Bengaluru</p><span className="home-overview-link">More about me <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-frosted" href="#skills"><h3>Skills</h3><p>{skills.slice(0, 3).map((group) => group.name).join(' · ')}</p><span className="home-overview-link">Explore skills <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-crystal" href="#projects"><h3>Projects</h3><p>ERP, data, web, and IoT experiments.</p><span className="home-overview-link">Browse projects <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-frosted" href="#experience"><h3>Experience & education</h3><p>AutoChip India · Neopraxis · BCA Cyber Security</p><span className="home-overview-link">View my journey <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-frosted" data-swarm="card" href="#about"><h3>About me</h3><p>{profile.role} · Bengaluru</p><span className="home-overview-link">More about me <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-frosted" data-swarm="card" href="#skills"><h3>Skills</h3><p>{skills.slice(0, 3).map((group) => group.name).join(' · ')}</p><span className="home-overview-link">Explore skills <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-crystal" data-swarm="card" href="#projects"><h3>Projects</h3><p>ERP, data, web, and IoT experiments.</p><span className="home-overview-link">Browse projects <ArrowRight size={15} /></span></a>
+        <a className="home-overview-card glass-frosted" data-swarm="card" href="#experience"><h3>Experience & education</h3><p>AutoChip India · Neopraxis · BCA Cyber Security</p><span className="home-overview-link">View my journey <ArrowRight size={15} /></span></a>
       </div>
     </div>
   </section>
@@ -62,12 +63,12 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
 function ProjectsPage({ reduceMotion, filter, setFilter, onSelect }: { reduceMotion: boolean | null; filter: string; setFilter: (value: string) => void; onSelect: (project: Project) => void }) {
   const categories = ['All', ...new Set(projects.map((project) => project.category))]
   const visibleProjects = projects.filter((project) => filter === 'All' || project.category === filter)
-  return <section className="projects section-pad" id="projects"><div className="container"><motion.div className="projects-heading" variants={reveal} initial={reduceMotion ? false : 'hidden'} animate="show"><div><SectionTitle title="Built to solve. Made to learn." note="Software projects, local-network experiments, and clearly labelled hardware concepts." /></div><span className="project-count">{String(visibleProjects.length).padStart(2, '0')} <i>/ {String(projects.length).padStart(2, '0')}</i></span></motion.div>
-    <div className="filter-row" role="group" aria-label="Filter projects by category">{categories.map((cat) => <button key={cat} className={filter === cat ? 'filter active' : 'filter'} aria-pressed={filter === cat} onClick={() => setFilter(cat)}>{cat}<span>{cat === 'All' ? projects.length : projects.filter((p) => p.category === cat).length}</span></button>)}</div>
-    <div className="project-list">{visibleProjects.map((project, i) => <motion.button id={project.id} key={project.id} layout onClick={() => onSelect(project)} className={`project-row glass-floating project-${project.number}`} initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : .4, delay: reduceMotion ? 0 : i * .035 }}>
-      <span className="project-number">{project.number}</span><span className="project-visual project-icon-card glass-deep" aria-hidden="true"><ProjectIcon variant={project.visualization} /></span>
-      <span className="project-main"><span className="project-category">{project.category} <i>·</i> {project.status}</span><strong>{project.title}</strong><span className="project-summary">{project.description}</span><span className="project-stack">{project.stack.slice(0, 4).map((tech) => <i key={tech}>{tech}</i>)}</span></span><span className="project-open"><ArrowUpRight size={20} /></span>
-    </motion.button>)}</div><p className="status-note"><span className="status-dot" /> Project statuses distinguish reported work, concepts, plans, and details awaiting verification.</p>
+  return <section className="projects section-pad" id="projects" data-swarm-section="projects"><div className="container" data-swarm="container"><motion.div className="projects-heading" variants={reveal} initial={reduceMotion ? false : 'hidden'} animate="show"><div><SectionTitle title="Built to solve. Made to learn." note="Software projects, local-network experiments, and clearly labelled hardware concepts." /></div><span className="project-count" data-swarm="style">{String(visibleProjects.length).padStart(2, '0')} <i>/ {String(projects.length).padStart(2, '0')}</i></span></motion.div>
+    <div className="filter-row" data-swarm="style" role="group" aria-label="Filter projects by category">{categories.map((cat) => <button key={cat} className={filter === cat ? 'filter active' : 'filter'} aria-pressed={filter === cat} onClick={() => setFilter(cat)}>{cat}<span>{cat === 'All' ? projects.length : projects.filter((p) => p.category === cat).length}</span></button>)}</div>
+    <div className="project-list">{visibleProjects.map((project, i) => <motion.button id={project.id} key={project.id} layout onClick={() => onSelect(project)} className={`project-row glass-floating project-${project.number}`} data-swarm="card" initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : .4, delay: reduceMotion ? 0 : i * .035 }}>
+      <span className="project-number">{project.number}</span><span className="project-visual project-icon-card glass-deep" aria-hidden="true" data-swarm="image"><ProjectIcon variant={project.visualization} /></span>
+      <span className="project-main"><span className="project-category">{project.category} <i>·</i> {project.status}</span><strong data-swarm="heading">{project.title}</strong><span className="project-summary" data-swarm="text">{project.description}</span><span className="project-stack">{project.stack.slice(0, 4).map((tech) => <i key={tech}>{tech}</i>)}</span></span><span className="project-open"><ArrowUpRight size={20} /></span>
+    </motion.button>)}</div><p className="status-note" data-swarm="text"><span className="status-dot" /> Project statuses distinguish reported work, concepts, plans, and details awaiting verification.</p>
   </div></section>
 }
 
@@ -120,6 +121,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem('portfolio-theme', theme)
   }, [theme])
+  useEffect(() => {
+    const pausePortfolioAutoScroll = () => {
+      if (autoScrollModeRef.current === 'down' || autoScrollModeRef.current === 'up') pauseAutoScrollRef.current()
+    }
+    window.addEventListener('swarm:activate', pausePortfolioAutoScroll)
+    return () => window.removeEventListener('swarm:activate', pausePortfolioAutoScroll)
+  }, [])
   useEffect(() => {
     const stopForKey = (event: KeyboardEvent) => {
       const target = event.target
@@ -502,6 +510,7 @@ function App() {
         </a>
         })}</div>
         <div className="nav-actions">
+          <SwarmController />
           <button className="theme-toggle" type="button" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} aria-pressed={theme === 'dark'} onClick={toggleTheme}>
             {theme === 'light' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
           </button>

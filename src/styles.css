@@ -1991,3 +1991,371 @@ html[data-theme='dark'] .auto-scroll-toggle.is-active { color: #e9f5ff; border-c
 @media (max-width: 760px) {
   .auto-scroll-toggle { top: 82px; right: 16px; min-height: 40px; padding-inline: 12px; }
 }
+
+/* SWARM STUDIO */
+.swarm-activate {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid rgba(37, 139, 255, .38);
+  border-radius: 11px;
+  color: var(--text);
+  background: linear-gradient(120deg, rgba(37, 139, 255, .12), rgba(185, 229, 255, .045));
+  box-shadow: inset 0 1px rgba(255,255,255,.06);
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s, box-shadow .2s, transform .2s;
+}
+.swarm-activate svg { width: 15px; height: 15px; color: #63b7ff; }
+.swarm-activate:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(99, 183, 255, .76);
+  color: #d9efff;
+  background: rgba(37, 139, 255, .16);
+  box-shadow: 0 6px 20px rgba(37, 139, 255, .14);
+}
+.swarm-activate:disabled { opacity: .8; cursor: default; }
+.swarm-activate:focus-visible { outline-color: #63b7ff; }
+.swarm-studio-transition { position: fixed; z-index: 90; inset: 0; pointer-events: none; }
+body:has(.swarm-studio) .auto-scroll-toggle { display: none; }
+html.swarm-auto-scrolling { scroll-behavior: auto !important; }
+.swarm-studio {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  color: #e7f2ff;
+  font-family: var(--mono);
+  pointer-events: none;
+}
+.swarm-topbar {
+  position: fixed;
+  z-index: 2;
+  inset: 0 0 auto;
+  display: flex;
+  height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(191, 220, 248, .12);
+  color: #e6f2ff;
+  background: rgba(12, 17, 26, .94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  pointer-events: none;
+}
+.swarm-brand, .swarm-status-main, .swarm-status-end, .swarm-mode, .swarm-live {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+.swarm-brand { flex: 0 0 auto; gap: 9px; font-size: 9px; letter-spacing: .08em; }
+.swarm-brand > svg { width: 17px; height: 17px; color: #63b7ff; }
+.swarm-live { gap: 6px; color: #9dc8ec; font-size: 8px; }
+.swarm-live i { width: 5px; height: 5px; border-radius: 50%; background: #63b7ff; box-shadow: 0 0 9px rgba(99,183,255,.8); animation: swarm-live-pulse 1.6s ease-in-out infinite; }
+.swarm-status-main { flex: 1 1 auto; justify-content: center; gap: 14px; font-size: 8px; letter-spacing: .07em; }
+.swarm-mode { gap: 6px; color: #8e9cae; }
+.swarm-mode svg { width: 13px; height: 13px; color: #63b7ff; }
+.swarm-section { color: #cde7ff; }
+.swarm-status-end { flex: 0 1 auto; justify-content: flex-end; gap: 8px; font-size: 8px; white-space: nowrap; }
+.swarm-cursor-count { color: #b9e5ff; }
+.swarm-animation-state { color: #8e9cae; font-size: 7px; letter-spacing: .08em; }
+.swarm-operation { max-width: 150px; overflow: hidden; color: #8493a6; text-overflow: ellipsis; }
+.swarm-task-count { color: #7e8da0; font-size: 7px; font-variant-numeric: tabular-nums; }
+.swarm-progress { width: 52px; height: 3px; flex: 0 0 auto; overflow: hidden; border-radius: 3px; background: rgba(191,220,248,.15); }
+.swarm-progress i { display: block; width: 100%; height: 100%; transform: scaleX(0); transform-origin: left center; background: #63b7ff; box-shadow: 0 0 6px rgba(99,183,255,.55); }
+.swarm-scroll-toggle { display: grid; width: 27px; height: 27px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(191,220,248,.16); border-radius: 6px; color: #adc8e0; background: rgba(255,255,255,.035); cursor: pointer; pointer-events: auto; }
+.swarm-scroll-toggle svg { width: 12px; height: 12px; }
+.swarm-scroll-toggle:hover { border-color: rgba(99,183,255,.58); color: #fff; }
+.swarm-scroll-toggle:disabled { opacity: .45; cursor: default; }
+.swarm-exit {
+  display: inline-flex;
+  min-width: 56px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid rgba(191, 220, 248, .19);
+  border-radius: 7px;
+  color: #d9e8f7;
+  background: rgba(255,255,255,.035);
+  font: 8px var(--mono);
+  letter-spacing: .1em;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.swarm-exit svg { width: 13px; height: 13px; }
+.swarm-exit:hover { border-color: rgba(99,183,255,.55); color: #fff; background: rgba(37,139,255,.12); }
+.swarm-toolbar {
+  position: fixed;
+  z-index: 2;
+  top: 63px;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  width: 60px;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 6px;
+  border: 1px solid rgba(191, 220, 248, .12);
+  border-radius: 12px;
+  background: rgba(15, 20, 29, .9);
+  box-shadow: 0 12px 32px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.035);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+}
+.swarm-tool {
+  position: relative;
+  display: grid;
+  width: 42px;
+  min-height: 38px;
+  flex: 1 1 38px;
+  place-items: center;
+  border-radius: 8px;
+  color: #8392a5;
+  transition: color .2s, background .2s, box-shadow .2s;
+}
+.swarm-tool > svg { width: 17px; height: 17px; stroke-width: 1.7; }
+.swarm-tool.has-divider { margin-bottom: 8px; }
+.swarm-tool.has-divider::after {
+  position: absolute;
+  right: 4px;
+  bottom: -6px;
+  left: 4px;
+  height: 1px;
+  background: rgba(191, 220, 248, .12);
+  content: "";
+}
+.swarm-tool.is-active {
+  color: #b9e5ff;
+  background: rgba(37, 139, 255, .16);
+  box-shadow: inset 0 0 0 1px rgba(99,183,255,.32), 0 0 15px rgba(37,139,255,.12);
+}
+.swarm-tool.is-active::before {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: -7px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--tool-colour, #63b7ff);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--tool-colour, #63b7ff), transparent 25%);
+  content: "";
+}
+.swarm-tool-cursor-dots { position: absolute; right: 3px; bottom: 3px; display: flex; gap: 2px; }
+.swarm-tool-cursor-dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--tool-colour); box-shadow: 0 0 5px var(--tool-colour); }
+.swarm-tool-tooltip {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: calc(100% + 13px);
+  padding: 7px 9px;
+  transform: translateY(-50%) translateX(-3px);
+  border: 1px solid rgba(191, 220, 248, .13);
+  border-radius: 6px;
+  color: #deedfb;
+  background: rgba(12,17,26,.97);
+  font: 8px var(--mono);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .16s, transform .16s, visibility .16s;
+}
+.swarm-tool:hover .swarm-tool-tooltip { transform: translateY(-50%) translateX(0); opacity: 1; visibility: visible; }
+.swarm-cursor-layer { position: fixed; z-index: 3; inset: 0; overflow: hidden; pointer-events: none; }
+.swarm-construction-layer { position: fixed; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; }
+.swarm-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: flex-start;
+  color: var(--cursor-colour);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--cursor-colour), transparent 35%));
+  will-change: transform;
+  transition: filter .2s;
+}
+.swarm-cursor::after { position: absolute; top: 8px; left: 3px; width: 28px; height: 1px; transform: translateX(-27px); transform-origin: right center; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--cursor-colour), transparent 35%)); content: ""; opacity: .65; }
+.swarm-cursor > svg { position: relative; z-index: 1; width: 20px; height: 20px; fill: rgba(9,14,23,.82); stroke-width: 1.8; }
+.swarm-cursor-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 0 1px;
+  padding: 4px 6px;
+  border: 1px solid color-mix(in srgb, var(--cursor-colour), transparent 65%);
+  border-radius: 4px;
+  color: #e4f2ff;
+  background: rgba(10,15,23,.83);
+  font: 6px var(--mono);
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+.swarm-cursor-label strong { color: var(--cursor-colour); font-size: 7px; font-weight: 600; }
+.swarm-cursor-label small { color: #9baabc; font: 6px var(--mono); letter-spacing: 0; }
+.swarm-cursor-tool { position: absolute; top: -9px; left: 22px; padding: 2px 4px; border: 1px solid color-mix(in srgb, var(--cursor-colour), transparent 35%); border-radius: 3px; color: #f0f7ff; background: color-mix(in srgb, var(--cursor-colour), #08111d 65%); font: 5px var(--mono); letter-spacing: .06em; white-space: nowrap; }
+.swarm-cursor.is-working { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--cursor-colour), transparent 12%)); }
+.swarm-cursor.is-working .swarm-cursor-label { border-color: color-mix(in srgb, var(--cursor-colour), transparent 28%); }
+.swarm-selection {
+  position: fixed;
+  z-index: 1;
+  visibility: hidden;
+  border: 1px solid color-mix(in srgb, var(--frame-colour, #63b7ff), transparent 18%);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--frame-colour, #63b7ff), transparent 94%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--frame-colour, #63b7ff), transparent 85%), 0 0 14px color-mix(in srgb, var(--frame-colour, #63b7ff), transparent 80%);
+  pointer-events: none;
+  transition: left .24s cubic-bezier(.2,.8,.2,1), top .24s cubic-bezier(.2,.8,.2,1), width .24s, height .24s;
+}
+.swarm-selection > i { position: absolute; width: 5px; height: 5px; border: 1px solid var(--frame-colour, #b9e5ff); background: #10141c; }
+.swarm-selection > i:nth-child(1) { top: -3px; left: -3px; }
+.swarm-selection > i:nth-child(2) { top: -3px; right: -3px; }
+.swarm-selection > i:nth-child(3) { right: -3px; bottom: -3px; }
+.swarm-selection > i:nth-child(4) { bottom: -3px; left: -3px; }
+.swarm-selection[style*="visible"] { animation: none; }
+.swarm-selection[data-effect="frame"] { border-style: dashed; background: rgba(37,139,255,.025); }
+.swarm-selection[data-effect="transform"] { border-width: 1px; box-shadow: 0 0 0 1px rgba(99,183,255,.12), inset 0 0 0 4px rgba(99,183,255,.025); }
+.swarm-selection[data-effect="colour"] { background: rgba(99,183,255,.09); }
+.swarm-selection[data-effect="placement"] { border-radius: 6px; background: rgba(37,139,255,.08); }
+.swarm-selection[data-effect="text"] { border-style: dotted; }
+.swarm-selection[data-effect="image"] { border-radius: 5px; border-style: dashed; }
+.swarm-selection[data-effect="shape"] { border-radius: 7px; }
+body:has(.swarm-studio) [data-swarm-building] { opacity: 0 !important; }
+.swarm-text-proxy, .swarm-icon-proxy { pointer-events: none !important; }
+.swarm-text-proxy { z-index: 1; }
+.swarm-text-proxy::before, .swarm-text-proxy::after { display: none !important; }
+.swarm-typed-character { transition: none !important; }
+.swarm-icon-proxy { z-index: 1; overflow: visible; }
+.swarm-typing-caret {
+  position: fixed;
+  z-index: 2;
+  width: 1px;
+  border-left: 1px solid var(--cursor-colour, #63b7ff);
+  animation: swarm-caret-blink .8s steps(2, start) infinite;
+}
+.swarm-duplicate-proxy {
+  z-index: 1;
+  overflow: hidden;
+  border: 1px dashed rgba(99, 183, 255, .75);
+  box-shadow: 0 0 16px rgba(37, 139, 255, .12);
+  pointer-events: none !important;
+}
+@keyframes swarm-caret-blink { 50% { opacity: 0; } }
+.swarm-alignment-guides {
+  position: fixed;
+  z-index: 0;
+  border: 1px dashed color-mix(in srgb, var(--guide-colour), transparent 42%);
+  background: linear-gradient(90deg, transparent calc(50% - .5px), color-mix(in srgb, var(--guide-colour), transparent 55%) 50%, transparent calc(50% + .5px)),
+    linear-gradient(0deg, transparent calc(50% - .5px), color-mix(in srgb, var(--guide-colour), transparent 55%) 50%, transparent calc(50% + .5px));
+  pointer-events: none;
+}
+.swarm-colour-pass {
+  position: fixed;
+  z-index: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pass-colour), transparent 58%), color-mix(in srgb, var(--pass-colour), transparent 100%));
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.swarm-studio.is-reduced-motion .swarm-cursor { will-change: auto; }
+.swarm-loader {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #e8f3ff;
+  background: rgba(5, 9, 16, .91);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-family: var(--mono);
+  pointer-events: none;
+}
+.swarm-loader-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.swarm-loader-kicker { margin: 0 0 24px; color: #7f95ab; font-size: 8px; letter-spacing: .18em; }
+.swarm-loader-progress { position: relative; display: grid; width: 180px; height: 112px; place-items: center; }
+.swarm-loader-progress strong { font: 500 46px var(--mono); letter-spacing: -.08em; font-variant-numeric: tabular-nums; }
+.swarm-loader-progress strong span { margin-left: 3px; color: #8da7c0; font-size: 17px; }
+.swarm-loader-content h1 { min-height: 18px; margin: 17px 0 8px; color: #d9edff; font: 600 10px var(--mono); letter-spacing: .15em; }
+.swarm-loader-content p { margin: 0; color: #8293a7; font: 9px var(--mono); }
+.swarm-loader-progress-track { width: min(300px, calc(100vw - 48px)); height: 2px; margin-top: 25px; overflow: hidden; background: rgba(185,229,255,.14); }
+.swarm-loader-progress-track > span { display: block; width: 100%; height: 100%; transform-origin: left center; background: #63b7ff; box-shadow: 0 0 8px rgba(99,183,255,.68); }
+.swarm-loader-particles { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
+.swarm-loader-agent { position: absolute; top: 0; left: 0; display: inline-flex; align-items: flex-start; color: var(--cursor-colour); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--cursor-colour), transparent 25%)); will-change: transform; }
+.swarm-loader-agent > svg { width: 17px; height: 17px; fill: rgba(9,14,23,.82); stroke-width: 1.8; }
+.swarm-loader-agent > small { margin: 7px 0 0 1px; padding: 2px 4px; border: 1px solid color-mix(in srgb, var(--cursor-colour), transparent 60%); border-radius: 3px; color: #e4f2ff; background: rgba(10,15,23,.78); font: 6px var(--mono); white-space: nowrap; }
+.swarm-loader-agents-orbit { position: absolute; inset: 8px; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(3, 1fr); place-items: center; opacity: .8; }
+.swarm-loader-agents-orbit i { width: 4px; height: 4px; border-radius: 50%; background: var(--cursor-colour); box-shadow: 0 0 9px var(--cursor-colour); }
+.swarm-loader-agents-orbit i:nth-child(3n + 1) { transform: translateY(-28px); }
+.swarm-loader-agents-orbit i:nth-child(3n + 2) { transform: translateY(24px); }
+.swarm-loader-agents-orbit i:nth-child(3n) { transform: translateY(-4px); }
+.swarm-loader.is-reduced-motion .swarm-loader-agents-orbit,
+.swarm-loader.is-reduced-motion .swarm-live i { animation: none; }
+@keyframes swarm-live-pulse { 50% { opacity: .45; box-shadow: 0 0 3px rgba(99,183,255,.5); } }
+
+@media (max-width: 980px) {
+  .swarm-activate { min-height: 36px; gap: 6px; padding-inline: 9px; font-size: 9px; }
+  .swarm-status-end { gap: 7px; }
+  .swarm-operation { max-width: 120px; }
+  .swarm-task-count { display: none; }
+}
+@media (max-width: 760px) {
+  .swarm-activate { width: 68px; min-height: 40px; padding: 0 7px; gap: 4px; font-size: 8px; }
+  .swarm-activate span { display: none; }
+  .swarm-activate::after { color: var(--text); content: "SWARM"; font-size: 8px; font-weight: 700; }
+  .swarm-topbar { height: 46px; gap: 8px; padding-inline: 10px; }
+  .swarm-brand { gap: 6px; font-size: 8px; }
+  .swarm-brand > svg { width: 15px; height: 15px; }
+  .swarm-live { display: none; }
+  .swarm-status-main { flex: 0 1 auto; justify-content: flex-start; }
+  .swarm-mode, .swarm-operation, .swarm-animation-state, .swarm-progress, .swarm-task-count { display: none; }
+  .swarm-section { font-size: 8px; }
+  .swarm-status-end { gap: 7px; font-size: 7px; }
+  .swarm-exit { min-width: 34px; width: 34px; height: 30px; padding: 0; }
+  .swarm-exit span { display: none; }
+  .swarm-toolbar {
+    top: auto;
+    right: 50%;
+    bottom: 10px;
+    left: auto;
+    display: grid;
+    width: min(320px, calc(100vw - 20px));
+    height: 82px;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 2px;
+    padding: 5px;
+    transform: translateX(50%);
+  }
+  .swarm-tool { width: 100%; min-height: 30px; }
+  .swarm-tool > svg { width: 15px; height: 15px; }
+  .swarm-tool.has-divider { margin: 0; }
+  .swarm-tool.has-divider::after { display: none; }
+  .swarm-tool.is-active::before { top: auto; right: 13px; bottom: 1px; left: 13px; width: auto; height: 2px; }
+  .swarm-tool-tooltip { top: auto; right: 50%; bottom: calc(100% + 7px); left: auto; transform: translateX(50%); }
+  .swarm-tool:hover .swarm-tool-tooltip { transform: translateX(50%); }
+}
+@media (max-width: 420px) {
+  .swarm-brand strong { font-size: 7px; }
+  .swarm-status-end { gap: 5px; }
+  .swarm-cursor-count { font-size: 6px; }
+  .swarm-scroll-toggle { width: 24px; height: 24px; }
+  .swarm-loader-agent > small { display: none; }
+  .swarm-toolbar { width: min(290px, calc(100vw - 14px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swarm-live i { animation: none !important; }
+  .swarm-selection { transition: none; }
+  .swarm-activate, .swarm-exit, .swarm-tool-tooltip { transition: none; }
+  .swarm-selection[style*="visible"] { animation: none; }
+  .swarm-alignment-guides, .swarm-colour-pass { display: none !important; }
+}

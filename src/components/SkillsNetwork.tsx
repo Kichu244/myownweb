@@ -96,31 +96,32 @@ export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
     return () => observer.disconnect()
   }, [group.name, technology, categoryIndex])
 
-  return <section className="skills section-pad" id="skills">
-    <div className="container">
-      <div className="section-title skills-title"><h2>The technologies I use and the skills I bring to every project.</h2></div>
-      <div className="skills-network" ref={networkRef}>
-        <svg className="skills-tree-connections" viewBox={`0 0 ${connectionSize.width} ${connectionSize.height}`} preserveAspectRatio="none" aria-hidden="true">{connections.map((connection) => <path key={connection.key} className="skills-wire" d={connection.path} pathLength={1} style={{ animationDelay: reduceMotion ? '0s' : `${connection.delay}s` }} />)}</svg>
-        <div className="skills-tree-parent" aria-label="Parent node: skills">
+  return <section className="skills section-pad" id="skills" data-swarm-section="skills">
+    <div className="container" data-swarm="container">
+      <div className="section-title skills-title"><h2 data-swarm="heading">The technologies I use and the skills I bring to every project.</h2></div>
+      <div className="skills-network" data-swarm="container" ref={networkRef}>
+        <svg className="skills-tree-connections" data-swarm="style" viewBox={`0 0 ${connectionSize.width} ${connectionSize.height}`} preserveAspectRatio="none" aria-hidden="true">{connections.map((connection) => <path key={connection.key} className="skills-wire" d={connection.path} pathLength={1} style={{ animationDelay: reduceMotion ? '0s' : `${connection.delay}s` }} />)}</svg>
+        <div className="skills-tree-parent" data-swarm="card" aria-label="Parent node: skills">
           <strong>My skills</strong>
         </div>
         <div className="skills-tree-panel" aria-label="Interactive skill tree">
           <div className="skills-tree-category-stage">
-            <span className="skills-tree-stage-label">SKILL AREAS</span>
+            <span className="skills-tree-stage-label" data-swarm="style">SKILL AREAS</span>
             <div className="skills-category-list" role="group" aria-label="Skill categories">
-              {groups.map((item, index) => <button className={`skills-category skills-tree-category${categoryIndex === index ? ' is-active' : ''}`} type="button" key={item.name} aria-pressed={categoryIndex === index} onClick={() => selectCategory(index)}>
+              {groups.map((item, index) => <button className={`skills-category skills-tree-category${categoryIndex === index ? ' is-active' : ''}`} data-swarm="card" type="button" key={item.name} aria-pressed={categoryIndex === index} onClick={() => selectCategory(index)}>
                 <span>{item.name}</span>
               </button>)}
             </div>
           </div>
           <div className="skills-tree-detail-stage" aria-live="polite">
-            <span className="skills-tree-stage-label">PURPOSE / PROJECT · {group.name}</span>
+            <span className="skills-tree-stage-label" data-swarm="style">PURPOSE / PROJECT · {group.name}</span>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div className="skills-tree-leaves" key={group.name} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} transition={{ duration: reduceMotion ? 0 : .3 }}>
                 {group.items.map((item, index) => <motion.button
                   type="button"
                   key={item}
                   className={`skills-tree-leaf${technology === item ? ' is-selected' : ''}`}
+                  data-swarm="card"
                   aria-pressed={technology === item}
                   onClick={() => setTechnology(item)}
                   initial={reduceMotion ? false : { opacity: 0, x: 12 }}
@@ -138,4 +139,3 @@ export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
     </div>
   </section>
 }
-
