@@ -1,23 +1,25 @@
 import {
   swarmIdentities,
-  type ElementClassification,
   type SwarmActivity,
   type SwarmElement,
   type SwarmIdentity,
-  type SwarmSectionInfo,
   type SwarmTargetBounds,
   type SwarmTask,
   type SwarmTool,
 } from './swarmTypes'
 import type { SwarmPoint } from './SwarmLoader'
 import { swarmSettings } from './swarmSettings'
+import { DOMSnapshotEngine, restoreTypingText } from './DOMSnapshotEngine'
+import { SectionManager, type ManagedSection } from './SectionManager'
+import { DependencyEngine } from './DependencyEngine'
+import { SwarmScrollController } from './SwarmScrollController'
 
 type AgentPhase = 'hidden' | 'entering' | 'waiting' | 'to-tool' | 'pickup' | 'moving' | 'working' | 'returning' | 'following'
 type BuildTask = SwarmTask & {
   id: string
   bounds: SwarmTargetBounds
 }
-type TextCharacter = { element: HTMLSpanElement }
+type TextCharacter = { element: HTMLSpanElement; bounds: SwarmTargetBounds }
 
 type AgentRuntime = {
   identity: SwarmIdentity
@@ -42,6 +44,7 @@ type AgentRuntime = {
   revealedCharacters: number
   paths: SVGPathElement[]
   pathLengths: number[]
+  pathTransform: DOMMatrix | null
   anchors: SVGCircleElement[]
   guide: HTMLElement | null
   guideLabel: HTMLElement | null
@@ -56,14 +59,6 @@ type OriginalTargetState = {
   opacity: string
 }
 
-type PendingElementRecord = {
-  element: SwarmElement
-  sectionId: string
-  registeredAt: number
-}
-
-const textTags = new Set(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'LABEL', 'SPAN', 'STRONG', 'EM', 'SMALL', 'CODE', 'LI', 'B', 'I'])
-
 export class SwarmCoordinator {
   private readonly agents: AgentRuntime[]
   private readonly toolbar: HTMLElement
@@ -74,34 +69,32 @@ export class SwarmCoordinator {
   private readonly onSectionChange: (sectionId: string) => void
   private readonly reducedMotion: boolean
 
-  // Section tracking
-  private sections: SwarmSectionInfo[] = []
-  private currentSectionIndex = 0
-  private sectionTasks = new Map<string, BuildTask[]>()
-  private completedSections = new Set<string>()
-  private pendingReadiness = new Map<SwarmElement, PendingElementRecord>()
+  // Modular engines
+  private readonly snapshotEngine = new DOMSnapshotEngine()
+  private readonly sectionManager: SectionManager
+  private readonly dependencyEngine = new DependencyEngine()
+  private readonly scrollController: SwarmScrollController
+
+  // Cumulative completed tasks across prior sections
+  private cumulativeCompletedTasks = 0
+  private cumulativeTotalTasks = 0
 
   // Global target tracking
   private readonly targetStates = new Map<SwarmElement, OriginalTargetState>()
-  private readonly knownTargets = new WeakSet<SwarmElement>()
   private readonly managedTargets = new Set<SwarmElement>()
 
-  // Animation and scroll controllers
+  // Animation and state tracking
   private frameId: number | null = null
-  private resumeTimer: number | null = null
+  private measurementFrameId: number | null = null
   private observer: MutationObserver | null = null
   private lastFrame = 0
   private lastPublish = 0
-  private lastScrollY = window.scrollY
-  private scrollPaused = false
-  private scrollManuallyPaused = false
-  private autoScrolling = false
-  private scrollComplete = false
+  private lastCachedScrollY = window.scrollY
+  private preparingSectionId: string | null = null
   private entered = false
   private running = false
   private finished = false
   private activitySignature = ''
-  private taskSequence = 0
   private pointerPosition: SwarmPoint | null = null
   private pointerDirection: SwarmPoint = { x: 1, y: 0 }
 
@@ -123,6 +116,23 @@ export class SwarmCoordinator {
     this.onActivity = onActivity
     this.onSectionChange = onSectionChange
     this.reducedMotion = reducedMotion
+
+    this.sectionManager = new SectionManager((sectionId) => {
+      this.onSectionChange(sectionId)
+    })
+
+    this.scrollController = new SwarmScrollController({
+      onScrollPaused: (reason) => {
+        this.publishActivity(reason === 'manual' || reason === 'user' ? 'PAUSED BY VISITOR' : 'PAUSED FOR CONSTRUCTION', true)
+      },
+      onScrollResumed: () => {
+        this.publishActivity('AUTO SCROLLING', true)
+      },
+      onScrollPositionChange: (scrollY) => {
+        this.updateCachedBoundsOnScroll(scrollY)
+      },
+    }, reducedMotion)
+
     this.agents = swarmIdentities.slice(0, cursorElements.length).map((identity, index) => {
       const position = { ...origin }
       return {
@@ -148,6 +158,7 @@ export class SwarmCoordinator {
         revealedCharacters: 0,
         paths: [],
         pathLengths: [],
+        pathTransform: null,
         anchors: [],
         guide: null,
         guideLabel: null,
@@ -159,32 +170,36 @@ export class SwarmCoordinator {
     if (this.running) return
     this.running = true
     if (this.reducedMotion) {
-      this.scrollComplete = true
+      this.scrollController.markCompleted()
       this.publishActivity('REDUCED MOTION', true)
       return
     }
 
-    // Ensure root and main containers are visible
+    // Reveal the canvas root; inactive sections remain concealed until their turn.
     const root = document.querySelector<HTMLElement>('#root')
     if (root) root.style.visibility = 'visible'
-    const main = document.querySelector<HTMLElement>('main')
-    if (main) main.style.visibility = 'visible'
+    // Discover portfolio sections
+    this.sectionManager.discoverSections()
+    this.sectionManager.getSections().forEach((section) => {
+      this.rememberTarget(section.element)
+      section.element.style.visibility = 'hidden'
+    })
 
-    // Initialize section registry
-    this.initSections()
+    // Start scroll controller
+    this.scrollController.start()
 
-    // Listeners for user interactions and scroll
-    window.addEventListener('scroll', this.handleScroll, { passive: true })
     window.addEventListener('resize', this.handleResize, { passive: true })
-    window.addEventListener('wheel', this.handleUserInterrupt, { passive: true })
-    window.addEventListener('touchmove', this.handleUserInterrupt, { passive: true })
-    window.addEventListener('pointerdown', this.handlePointerInterrupt, { passive: true })
     window.addEventListener('pointermove', this.handlePointerMove, { passive: true })
-    window.addEventListener('keydown', this.handleKeyInterrupt)
 
-    this.observer = new MutationObserver(() => {
+    this.observer = new MutationObserver((records) => {
       if (!this.running || this.finished) return
-      this.refreshActiveSectionTargets()
+      const activeSection = this.sectionManager.getActiveSection()
+      if (!activeSection || !records.some((record) => activeSection.element.contains(record.target))) return
+      if (this.measurementFrameId !== null) return
+      this.measurementFrameId = window.requestAnimationFrame(() => {
+        this.measurementFrameId = null
+        this.refreshActiveSectionTargets()
+      })
     })
     if (root) this.observer.observe(root, { childList: true, subtree: true })
 
@@ -197,28 +212,19 @@ export class SwarmCoordinator {
     if (!this.running) return
     this.running = false
     if (this.frameId !== null) window.cancelAnimationFrame(this.frameId)
-    if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer)
     this.frameId = null
-    this.resumeTimer = null
+    if (this.measurementFrameId !== null) window.cancelAnimationFrame(this.measurementFrameId)
+    this.measurementFrameId = null
+    this.preparingSectionId = null
     this.observer?.disconnect()
     this.observer = null
 
-    window.removeEventListener('scroll', this.handleScroll)
+    this.scrollController.stop()
     window.removeEventListener('resize', this.handleResize)
-    window.removeEventListener('wheel', this.handleUserInterrupt)
-    window.removeEventListener('touchmove', this.handleUserInterrupt)
-    window.removeEventListener('pointerdown', this.handlePointerInterrupt)
     window.removeEventListener('pointermove', this.handlePointerMove)
-    window.removeEventListener('keydown', this.handleKeyInterrupt)
-
-    document.documentElement.classList.remove('swarm-auto-scrolling')
-    this.autoScrolling = false
 
     const root = document.querySelector<HTMLElement>('#root')
     if (root) root.style.removeProperty('visibility')
-    const main = document.querySelector<HTMLElement>('main')
-    if (main) main.style.removeProperty('visibility')
-
     this.agents.forEach((agent) => this.clearAgentOperation(agent))
     for (const [target, state] of this.targetStates) {
       this.restoreAttribute(target, 'data-swarm-building', state.building)
@@ -230,9 +236,9 @@ export class SwarmCoordinator {
     }
     this.targetStates.clear()
     this.managedTargets.clear()
-    this.sectionTasks.clear()
-    this.completedSections.clear()
-    this.pendingReadiness.clear()
+    this.dependencyEngine.reset()
+    this.sectionManager.reset()
+    this.snapshotEngine.reset()
 
     this.agents.forEach((agent) => {
       agent.cursor.removeAttribute('data-tool')
@@ -260,351 +266,66 @@ export class SwarmCoordinator {
       totalTasks: 0,
       animationState: 'INACTIVE',
       scrollPaused: false,
+      scrollPausedForConstruction: false,
       scrollComplete: false,
     })
   }
 
   toggleAutoScroll() {
-    if (this.scrollComplete) return
-    if (this.scrollPaused) {
-      this.scrollPaused = false
-      this.scrollManuallyPaused = false
-      if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer)
-      this.resumeTimer = null
-      this.lastScrollY = window.scrollY
-      this.startAutoScroll()
-    } else {
-      this.pauseForUser(true)
-    }
+    this.scrollController.toggleAutoScroll()
   }
 
   // =========================================================================
-  // SECTION MANAGEMENT
+  // SECTION CONSTRUCTION ORCHESTRATION
   // =========================================================================
 
-  private initSections() {
-    const sectionEls = Array.from(document.querySelectorAll<HTMLElement>('main [data-swarm-section][id]'))
-    if (!sectionEls.length) {
-      const main = document.querySelector('main') as HTMLElement | null
-      if (main) sectionEls.push(main)
-    }
+  private activateSectionConstruction(section: ManagedSection) {
+    if (this.preparingSectionId) return
+    const bounds = section.element.getBoundingClientRect()
+    if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return
 
-    this.sections = sectionEls.map((element, index) => {
-      const id = element.dataset.swarmSection || element.id || `section-${index}`
-      return {
-        id,
-        label: id.toUpperCase(),
-        phase: 'PENDING',
-        element,
-      }
-    })
-
-    // Determine starting section based on current scroll position
-    let startingIndex = 0
-    if (window.scrollY > 100) {
-      const centerY = window.innerHeight * 0.42
-      let minDistance = Number.POSITIVE_INFINITY
-      this.sections.forEach((sec, idx) => {
-        const bounds = sec.element.getBoundingClientRect()
-        const dist = Math.abs((bounds.top + bounds.bottom) / 2 - centerY)
-        if (bounds.bottom > 0 && bounds.top < window.innerHeight && dist < minDistance) {
-          minDistance = dist
-          startingIndex = idx
-        }
-      })
-    }
-
-    this.currentSectionIndex = startingIndex
-    if (this.sections[startingIndex]) {
-      this.sections[startingIndex].phase = 'ACTIVE'
-      this.onSectionChange(this.sections[startingIndex].id)
-    }
-  }
-
-  private getActiveSection(): SwarmSectionInfo | null {
-    return this.sections[this.currentSectionIndex] ?? null
-  }
-
-  private activateSectionConstruction(section: SwarmSectionInfo) {
-    section.phase = 'CONSTRUCTING'
+    this.preparingSectionId = section.id
+    this.scrollController.pauseForConstruction()
     section.element.style.visibility = 'visible'
-    this.onSectionChange(section.id)
+    this.publishActivity('PREPARING SECTION', true)
+    void this.prepareSectionConstruction(section)
+  }
 
-    // Stop auto-scrolling during construction
-    this.stopAutoScroll()
+  private async prepareSectionConstruction(section: ManagedSection) {
+    const initialBlueprint = this.snapshotEngine.captureSectionBlueprint(section.element, section.id)
+    this.markBlueprintTargets(initialBlueprint)
+    await this.snapshotEngine.waitForVisualReadiness(section.element)
 
-    // Discover all visual content in this section
-    this.discoverSectionTargets(section)
+    if (!this.running || this.preparingSectionId !== section.id
+      || this.sectionManager.getActiveSection() !== section || section.phase !== 'ACTIVE') {
+      return
+    }
 
-    // Dispatch tasks to available agents
-    this.dispatchTasks()
+    const bounds = section.element.getBoundingClientRect()
+    if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) {
+      this.preparingSectionId = null
+      section.element.style.visibility = 'hidden'
+      return
+    }
+
+    const blueprint = this.snapshotEngine.captureSectionBlueprint(section.element, section.id)
+    if (!this.sectionManager.transitionToConstructing(section.id, blueprint)) {
+      this.preparingSectionId = null
+      return
+    }
+    this.preparingSectionId = null
+    this.dependencyEngine.loadLayers(blueprint.layers)
+    this.markBlueprintTargets(blueprint)
     this.publishActivity('CONSTRUCTING', true)
-  }
-
-  private refreshActiveSectionTargets() {
-    const activeSection = this.getActiveSection()
-    if (!activeSection || activeSection.phase !== 'CONSTRUCTING') return
-    this.discoverSectionTargets(activeSection)
     this.dispatchTasks()
   }
 
-  // =========================================================================
-  // CLASSIFICATION & CONTENT DETECTION (NEVER EXCLUDE ANIMATED/INTERACTIVE)
-  // =========================================================================
-
-  private isConstructible(element: SwarmElement): boolean {
-    // Exclude Swarm Studio's own internal UI
-    if (element.closest('.swarm-activate, .swarm-studio, .swarm-loader, .theme-toggle, .menu-toggle, .auto-scroll-toggle')) {
-      return false
-    }
-
-    // Exclude explicitly exempted elements
-    if (element.hasAttribute('data-swarm-exempt') || element.closest('[data-swarm-exempt]')) {
-      return false
-    }
-
-    // Exclude dialogs/modals that are not open
-    if (element.tagName === 'DIALOG' && !(element as HTMLDialogElement).open) {
-      return false
-    }
-
-    return true
-  }
-
-  private classifyReadiness(element: SwarmElement, registeredAt = performance.now()): ElementClassification {
-    if (element.getAttribute('data-swarm-built') === 'true') {
-      return 'COMPLETED'
-    }
-
-    // Check if element is temporarily showing hover / active state
-    if (element.matches?.(':hover, :active')) {
-      return 'TEMPORARILY_INTERACTIVE'
-    }
-
-    // Check image load state
-    if (element instanceof HTMLImageElement) {
-      if (!element.complete || element.naturalWidth === 0) {
-        return 'WAITING_FOR_RENDER'
+  private markBlueprintTargets(blueprint: ReturnType<DOMSnapshotEngine['captureSectionBlueprint']>) {
+    for (const element of blueprint.elements.values()) {
+      if (element.type !== 'section') {
+        this.rememberTarget(element.domNode)
+        element.domNode.setAttribute('data-swarm-building', 'true')
       }
-    }
-
-    // Check if element has zero rendered dimensions
-    const rect = element.getBoundingClientRect()
-    if (rect.width <= 0 || rect.height <= 0) {
-      // Allow up to 350ms for entrance animation or render to establish dimensions
-      if (performance.now() - registeredAt < 350) {
-        return 'WAITING_FOR_RENDER'
-      }
-      return 'READY_FOR_CONSTRUCTION'
-    }
-
-    // Check if entrance animation has non-infinite opacity: 0
-    try {
-      const comp = window.getComputedStyle(element)
-      if (comp.opacity === '0' && !element.hasAttribute('data-swarm-building')) {
-        if (performance.now() - registeredAt < 400) {
-          return 'WAITING_FOR_RENDER'
-        }
-      }
-    } catch {
-      // safe fallback
-    }
-
-    return 'READY_FOR_CONSTRUCTION'
-  }
-
-  private discoverSectionTargets(section: SwarmSectionInfo) {
-    if (!this.running || this.reducedMotion) return
-    const container = section.element
-    if (!container || !container.isConnected) return
-
-    const candidates = new Set<SwarmElement>()
-
-    // 1. Elements with data-swarm marker
-    container.querySelectorAll<HTMLElement>('[data-swarm]').forEach((target) => {
-      candidates.add(target)
-    })
-
-    // 2. Headings & Typography
-    const textSelector = Array.from(textTags, (tag) => tag.toLowerCase()).join(',')
-    container.querySelectorAll<HTMLElement>(textSelector).forEach((target) => {
-      if (!this.isConstructible(target)) return
-      const text = this.getTargetFinalText(target)
-      if (!text) return
-
-      // Avoid nested duplicates if parent heading already captured
-      const parentHeading = target.parentElement?.closest('h1, h2, h3, h4, h5, h6')
-      if (parentHeading && parentHeading !== target) return
-
-      candidates.add(target)
-    })
-
-    // 3. Cards, articles, panels, buttons
-    container.querySelectorAll<HTMLElement>('.career-entry, .home-overview-card, .project-row, .skills-tree-parent, .skills-category, .skills-tree-leaf, .button, a.button, button, .hero-intro-card, .identity-visual, .identity-actions, .identity-focus, .contact-primary-action, .contact-copy-action, .hero-tech-tags').forEach((target) => {
-      if (this.isConstructible(target)) candidates.add(target)
-    })
-
-    // 4. SVGs & Icons
-    container.querySelectorAll<SVGSVGElement>('svg').forEach((svg) => {
-      if (this.isConstructible(svg)) candidates.add(svg)
-    })
-
-    // 5. Images
-    container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
-      if (this.isConstructible(img)) candidates.add(img)
-    })
-
-    const currentTasks = this.sectionTasks.get(section.id) ?? []
-
-    candidates.forEach((target) => {
-      if (this.knownTargets.has(target) || !target.isConnected) return
-      if (!this.isConstructible(target)) return
-
-      const readiness = this.classifyReadiness(target)
-      if (readiness === 'WAITING_FOR_RENDER' || readiness === 'TEMPORARILY_INTERACTIVE') {
-        if (!this.pendingReadiness.has(target)) {
-          this.pendingReadiness.set(target, {
-            element: target,
-            sectionId: section.id,
-            registeredAt: performance.now(),
-          })
-        }
-        return
-      }
-
-      this.pendingReadiness.delete(target)
-      this.knownTargets.add(target)
-      this.rememberTarget(target)
-
-      const rect = target.getBoundingClientRect()
-      const task = this.createTask(target, section.id, rect)
-      if (!task) return
-
-      target.setAttribute('data-swarm-building', 'true')
-      currentTasks.push(task)
-    })
-
-    this.sectionTasks.set(section.id, currentTasks)
-  }
-
-  private processPendingReadiness() {
-    if (this.pendingReadiness.size === 0) return
-    const activeSection = this.getActiveSection()
-    if (!activeSection || activeSection.phase !== 'CONSTRUCTING') return
-
-    const currentTasks = this.sectionTasks.get(activeSection.id) ?? []
-    let newlyReady = false
-
-    for (const [element, record] of this.pendingReadiness) {
-      if (record.sectionId !== activeSection.id) continue
-      if (!element.isConnected) {
-        this.pendingReadiness.delete(element)
-        continue
-      }
-
-      const readiness = this.classifyReadiness(element, record.registeredAt)
-      if (readiness === 'READY_FOR_CONSTRUCTION' || performance.now() - record.registeredAt > 450) {
-        this.pendingReadiness.delete(element)
-        this.knownTargets.add(element)
-        this.rememberTarget(element)
-
-        const rect = element.getBoundingClientRect()
-        const task = this.createTask(element, activeSection.id, rect)
-        if (task) {
-          element.setAttribute('data-swarm-building', 'true')
-          currentTasks.push(task)
-          newlyReady = true
-        }
-      }
-    }
-
-    if (newlyReady) {
-      this.sectionTasks.set(activeSection.id, currentTasks)
-      this.dispatchTasks()
-    }
-  }
-
-  private getTargetFinalText(target: HTMLElement): string {
-    const typingSpan = target.querySelector('.typing-text') || (target.classList.contains('typing-text') ? target : null)
-    if (typingSpan) {
-      const fullText = typingSpan.getAttribute('aria-label')
-      if (fullText && fullText.trim()) return fullText.trim()
-    }
-
-    const ariaLabel = target.getAttribute('aria-label')
-    if (ariaLabel && ariaLabel.trim() && ariaLabel.length > (target.textContent?.length ?? 0)) {
-      return ariaLabel.trim()
-    }
-
-    return target.textContent?.trim() || ''
-  }
-
-  private createTask(target: SwarmElement, sectionId: string, rect: DOMRect): BuildTask | null {
-    const tag = target.tagName.toUpperCase()
-    const marker = target.dataset.swarm as SwarmTask['kind'] | undefined
-    const isSvg = tag === 'SVG'
-    const isImg = tag === 'IMG' || marker === 'image'
-    const isButton = tag === 'BUTTON' || target.classList.contains('button') || target.classList.contains('contact-primary-action') || target.classList.contains('contact-copy-action')
-    const isCard = target.classList.contains('career-entry') || target.classList.contains('home-overview-card') || target.classList.contains('project-row') || target.classList.contains('skills-tree-parent') || target.classList.contains('hero-intro-card') || target.classList.contains('skills-tree-leaf') || target.classList.contains('skills-category') || marker === 'card'
-
-    const hasText = !isSvg && !isImg && Boolean(this.getTargetFinalText(target as HTMLElement))
-    const isPureText = hasText && !isCard && !isButton && textTags.has(tag)
-
-    const kind = marker ?? (isSvg ? 'icon' : isImg ? 'image' : isPureText ? 'text' : isButton ? 'button' : isCard ? 'card' : 'decoration')
-    const duplicate = (kind === 'card' || kind === 'button') && target instanceof HTMLElement && this.hasDuplicateSource(target)
-
-    const operation = isPureText ? 'type'
-      : isImg ? 'image'
-      : isSvg ? 'icon'
-      : kind === 'style' ? 'colour'
-      : kind === 'layout' ? 'align'
-      : duplicate ? 'transform' : 'draw'
-
-    const tool: SwarmTool = operation === 'type' ? 'Text'
-      : operation === 'image' ? 'Image'
-      : operation === 'icon' ? 'Pen'
-      : operation === 'colour' ? 'Colour'
-      : operation === 'align' ? 'Arrange'
-      : operation === 'transform' ? 'Transform'
-      : kind === 'container' ? 'Frame' : 'Shape'
-
-    const description = operation === 'type' ? 'Typing characters'
-      : operation === 'image' ? 'Constructing image'
-      : operation === 'icon' ? 'Drawing vector paths'
-      : operation === 'colour' ? 'Applying styling'
-      : operation === 'align' ? 'Measuring and aligning'
-      : operation === 'transform' ? 'Duplicating component'
-      : isCard || isButton ? 'Constructing component geometry' : 'Drawing layout frame'
-
-    const textLength = isPureText ? Math.max(1, this.getTargetFinalText(target as HTMLElement).length) : 0
-    const duration = isPureText
-      ? swarmSettings.timing.textSetupDuration + textLength * swarmSettings.timing.textCharacterDelay
-      : operation === 'icon'
-      ? swarmSettings.timing.iconSetupDuration + (target.querySelectorAll('path').length || 1) * swarmSettings.timing.iconPathDuration
-      : operation === 'image' ? swarmSettings.timing.imageConstructionDuration
-      : operation === 'align' ? swarmSettings.timing.alignmentDuration
-      : operation === 'colour' ? swarmSettings.timing.colourApplicationDuration
-      : swarmSettings.timing.drawingDuration + Math.min(
-        swarmSettings.timing.drawingSizeDurationCap,
-        Math.hypot(rect.width, rect.height) * swarmSettings.timing.drawingSizeScale,
-      )
-
-    return {
-      id: `operation-${++this.taskSequence}`,
-      target,
-      sectionId,
-      kind,
-      operation,
-      tool,
-      description,
-      status: 'queued',
-      duration,
-      bounds: {
-        left: rect.left,
-        top: rect.top,
-        width: Math.max(2, rect.width),
-        height: Math.max(2, rect.height),
-      },
     }
   }
 
@@ -622,7 +343,7 @@ export class SwarmCoordinator {
   }
 
   // =========================================================================
-  // TASK DISPATCHING & AGENT ASSIGNMENT
+  // TASK DISPATCHING WITH PROPERTY-LEVEL DEPENDENCY GRAPH
   // =========================================================================
 
   private enterFromSpawn() {
@@ -645,7 +366,7 @@ export class SwarmCoordinator {
 
   private dispatchTasks() {
     if (!this.entered || !this.running) return
-    const activeSection = this.getActiveSection()
+    const activeSection = this.sectionManager.getActiveSection()
     if (!activeSection) return
 
     if (activeSection.phase === 'ACTIVE') {
@@ -655,46 +376,75 @@ export class SwarmCoordinator {
 
     if (activeSection.phase !== 'CONSTRUCTING') return
 
-    const tasks = this.sectionTasks.get(activeSection.id) ?? []
-    const queued = tasks.filter((t) => t.status === 'queued')
+    // Assign tasks concurrently to available waiting agents
+    for (const agent of this.agents) {
+      if (agent.phase !== 'waiting') continue
 
-    if (queued.length === 0) {
-      this.checkSectionCompletion(activeSection)
-      return
-    }
+      // Intelligent assignment:
+      // Priority 1: Match agent's current tool (saves round-trip to toolbar!)
+      // Priority 2: Proximity to agent
+      const bestOperation = this.dependencyEngine.findBestOperationForAgent(
+        agent.identity.id,
+        agent.tool,
+        agent.position,
+      )
 
-    // Assign tasks concurrently to available agents
-    this.agents.forEach((agent) => {
-      if (agent.phase !== 'waiting' || queued.length === 0) return
-      let nearestIndex = 0
-      let nearestDistance = Number.POSITIVE_INFINITY
+      if (!bestOperation) break // No ready tasks available right now
 
-      queued.forEach((task, idx) => {
-        const centerX = task.bounds.left + task.bounds.width / 2
-        const centerY = task.bounds.top + task.bounds.height / 2
-        const distance = Math.hypot(centerX - agent.position.x, centerY - agent.position.y)
-        if (distance < nearestDistance) {
-          nearestDistance = distance
-          nearestIndex = idx
-        }
-      })
+      // Atomically reserve operation in dependency engine
+      const reserved = this.dependencyEngine.reserveOperation(bestOperation.id, agent.identity.id)
+      if (!reserved) continue
 
-      const [task] = queued.splice(nearestIndex, 1)
+      // Find the DOM target for this element
+      const element = activeSection.blueprint?.elements.get(bestOperation.elementId)
+      const target = element ? element.domNode : activeSection.element
+
+      const task: BuildTask = {
+        id: bestOperation.id,
+        layerId: bestOperation.id,
+        elementId: bestOperation.elementId,
+        target,
+        sectionId: activeSection.id,
+        kind: element?.type === 'heading' || element?.type === 'text' ? 'text'
+          : element?.type === 'card' ? 'card'
+          : element?.type === 'button' ? 'button'
+          : element?.type === 'image' ? 'image'
+          : element?.type === 'icon' ? 'icon'
+          : element?.type === 'badge' ? 'style'
+          : 'decoration',
+        operation: bestOperation.layer === 'text' ? 'type'
+          : bestOperation.layer === 'image' ? 'image'
+          : bestOperation.layer === 'icon' ? 'icon'
+          : bestOperation.layer === 'background' || bestOperation.layer === 'styling' ? 'colour'
+          : bestOperation.layer === 'alignment' ? 'align'
+          : 'draw',
+        layerKind: bestOperation.layer,
+        tool: bestOperation.tool,
+        description: bestOperation.description,
+        status: 'collecting',
+        duration: bestOperation.duration,
+        bounds: bestOperation.bounds,
+        dependencies: bestOperation.dependencies,
+        metadata: bestOperation.metadata,
+      }
+
       this.assignTask(agent, task)
-    })
+    }
 
     this.checkSectionCompletion(activeSection)
   }
 
   private assignTask(agent: AgentRuntime, task: BuildTask) {
-    task.status = 'collecting'
     agent.task = task
 
+    // Tool reuse optimization:
+    // If agent already holds the required tool, go straight to the target!
     if (agent.tool === task.tool) {
       this.moveToTarget(agent)
       return
     }
 
+    // Agent needs to fetch the tool from the toolbar
     agent.phase = 'to-tool'
     this.updateCursorDOM(agent, 'collecting tool', task.tool, false, task.description)
 
@@ -738,12 +488,26 @@ export class SwarmCoordinator {
       return
     }
 
-    const rect = task.target.getBoundingClientRect()
-    task.bounds = {
-      left: rect.left,
-      top: rect.top,
-      width: Math.max(2, rect.width),
-      height: Math.max(2, rect.height),
+    // Mark working in dependency engine
+    if (task.layerId) {
+      if (!this.dependencyEngine.startOperation(task.layerId, agent.identity.id)) {
+        console.error(`Unable to start reserved Swarm operation ${task.layerId} for ${agent.identity.id}`)
+        this.discardDisconnectedTask(agent)
+        return
+      }
+    }
+
+    const activeSection = this.sectionManager.getActiveSection()
+    const blueprintElement = activeSection?.blueprint?.elements.get(task.elementId ?? '')
+    if (blueprintElement) task.bounds = { ...blueprintElement.bounds }
+    else {
+      const rect = task.target.getBoundingClientRect()
+      task.bounds = {
+        left: rect.left,
+        top: rect.top,
+        width: Math.max(2, rect.width),
+        height: Math.max(2, rect.height),
+      }
     }
 
     agent.phase = 'working'
@@ -796,7 +560,7 @@ export class SwarmCoordinator {
       if (task.operation === 'draw' || task.operation === 'image') this.createDrawGesture(agent, task.bounds)
       if (task.operation === 'align') this.createGuides(agent, task.bounds)
       if (task.operation === 'colour') this.createColourPass(agent)
-      if ((task.kind === 'card' || task.kind === 'button') && task.target instanceof HTMLElement) {
+      if ((task.kind === 'card' || task.kind === 'button') && task.target instanceof HTMLElement && this.hasDuplicateSource(task.target)) {
         this.createDuplicateProxy(agent, task.target)
       }
     }
@@ -817,23 +581,19 @@ export class SwarmCoordinator {
     proxy.removeAttribute('data-swarm-built')
     proxy.classList.add('swarm-text-proxy')
     proxy.style.position = 'fixed'
-    proxy.style.left = `${bounds.left}px`
-    proxy.style.top = `${bounds.top}px`
+    proxy.style.left = '0px'
+    proxy.style.top = '0px'
     proxy.style.width = `${bounds.width}px`
     proxy.style.height = 'auto'
     proxy.style.margin = '0'
     proxy.style.maxWidth = 'none'
-    proxy.style.transform = 'none'
+    proxy.style.transform = `translate3d(${bounds.left}px, ${bounds.top}px, 0)`
     proxy.style.visibility = 'visible'
     proxy.style.opacity = '1'
     proxy.style.clipPath = 'none'
+    proxy.dataset.swarmBounds = `${bounds.left}:${bounds.top}:${bounds.width}`
 
-    // Replace any TypingText span with its full resting aria-label string
-    const typingSpans = proxy.querySelectorAll<HTMLElement>('.typing-text')
-    typingSpans.forEach((span) => {
-      const full = span.getAttribute('aria-label')
-      if (full) span.textContent = full
-    })
+    proxy.querySelectorAll<HTMLElement>('.typing-text').forEach(restoreTypingText)
 
     const walker = document.createTreeWalker(proxy, NodeFilter.SHOW_TEXT)
     const nodes: Text[] = []
@@ -850,7 +610,10 @@ export class SwarmCoordinator {
         span.textContent = character
         span.style.opacity = '0'
         fragment.append(span)
-        characters.push({ element: span })
+        characters.push({
+          element: span,
+          bounds: { left: 0, top: 0, width: 0, height: 0 },
+        })
       })
       node.replaceWith(fragment)
     })
@@ -859,6 +622,15 @@ export class SwarmCoordinator {
     agent.characters = characters
     agent.revealedCharacters = 0
     this.overlay.append(proxy)
+    agent.characters.forEach((character) => {
+      const rect = character.element.getBoundingClientRect()
+      character.bounds = {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      }
+    })
 
     const caret = document.createElement('i')
     caret.className = 'swarm-typing-caret'
@@ -892,6 +664,8 @@ export class SwarmCoordinator {
     })
     agent.proxy = proxy
     this.overlay.append(proxy)
+    agent.pathTransform = paths[0]?.getScreenCTM() ?? null
+    proxy.dataset.swarmBounds = `${bounds.left}:${bounds.top}:${bounds.width}:${bounds.height}`
   }
 
   private createDrawGesture(agent: AgentRuntime, bounds: SwarmTargetBounds) {
@@ -994,9 +768,30 @@ export class SwarmCoordinator {
     agent.frame.style.visibility = 'visible'
 
     if (agent.proxy) {
-      agent.proxy.style.left = `${rect.left}px`
-      agent.proxy.style.top = `${rect.top}px`
-      agent.proxy.style.width = `${rect.width}px`
+      if (task.operation === 'type') {
+        const proxyBounds = `${rect.left}:${rect.top}:${rect.width}`
+        if (agent.proxy.dataset.swarmBounds !== proxyBounds) {
+          agent.proxy.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`
+          agent.proxy.style.width = `${rect.width}px`
+          agent.proxy.dataset.swarmBounds = proxyBounds
+        }
+      } else {
+        const proxyBounds = `${rect.left}:${rect.top}:${rect.width}:${rect.height}`
+        if (agent.proxy.dataset.swarmBounds !== proxyBounds) {
+          const previousBounds = agent.proxy.dataset.swarmBounds?.split(':').map(Number)
+          agent.proxy.style.left = `${rect.left}px`
+          agent.proxy.style.top = `${rect.top}px`
+          agent.proxy.style.width = `${rect.width}px`
+          agent.proxy.style.height = `${rect.height}px`
+          if (previousBounds?.length === 4 && previousBounds[2] === rect.width && previousBounds[3] === rect.height && agent.pathTransform) {
+            agent.pathTransform.e += rect.left - previousBounds[0]
+            agent.pathTransform.f += rect.top - previousBounds[1]
+          } else {
+            agent.pathTransform = agent.paths[0]?.getScreenCTM() ?? null
+          }
+          agent.proxy.dataset.swarmBounds = proxyBounds
+        }
+      }
       if (task.operation === 'type') {
         const characterDelay = swarmSettings.timing.textCharacterDelay / swarmSettings.speed.typing
         const visibleCharacters = Math.min(agent.characters.length, Math.floor(elapsed / characterDelay))
@@ -1005,8 +800,8 @@ export class SwarmCoordinator {
           agent.revealedCharacters++
         }
         const character = agent.characters[Math.min(visibleCharacters, agent.characters.length - 1)]?.element
-        if (character) {
-          const charBounds = character.getBoundingClientRect()
+        const charBounds = agent.characters[Math.min(visibleCharacters, agent.characters.length - 1)]?.bounds
+        if (character && charBounds) {
           const x = charBounds.left + (visibleCharacters >= agent.characters.length ? charBounds.width : 0)
           agent.position = { x, y: charBounds.top + charBounds.height / 2 }
           if (agent.caret) {
@@ -1030,7 +825,7 @@ export class SwarmCoordinator {
         const activePath = agent.paths[currentPath]
         const localPathProgress = Math.min(1, Math.max(0, pathProgress - currentPath))
         const point = activePath.getPointAtLength(agent.pathLengths[currentPath] * localPathProgress)
-        const transform = activePath.getScreenCTM()
+        const transform = agent.pathTransform
         const screenPoint = transform ? point.matrixTransform(transform) : { x: rect.left + rect.width * progress, y: rect.top + rect.height / 2 }
         this.setAgentPosition(agent, { x: screenPoint.x, y: screenPoint.y })
       }
@@ -1079,7 +874,10 @@ export class SwarmCoordinator {
       })
     }
 
-    task.target.setAttribute('data-swarm-build-progress', String(Math.floor(progress * 100)))
+    const progressPercent = Math.floor(progress * 10) * 10
+    if (task.target.getAttribute('data-swarm-build-progress') !== String(progressPercent)) {
+      task.target.setAttribute('data-swarm-build-progress', String(progressPercent))
+    }
     if (progress >= 1) this.finishTask(agent)
   }
 
@@ -1087,7 +885,18 @@ export class SwarmCoordinator {
     const task = agent.task
     if (task) {
       task.status = 'complete'
-      this.completeTarget(task.target)
+      if (task.layerId) {
+        this.dependencyEngine.completeOperation(task.layerId)
+      }
+
+      // Check if all layers for this specific element are complete
+      const activeSection = this.sectionManager.getActiveSection()
+      const elementLayers = activeSection?.blueprint?.elements.get(task.elementId ?? '')?.layerOperations ?? []
+      const allElementLayersComplete = elementLayers.every((l) => this.dependencyEngine.isCompleted(l.id))
+
+      if (allElementLayersComplete || elementLayers.length === 0) {
+        this.completeTarget(task.target)
+      }
     }
 
     this.clearAgentOperation(agent)
@@ -1095,7 +904,7 @@ export class SwarmCoordinator {
     this.updateCursorDOM(agent, 'waiting', null, false, 'Waiting for task')
     agent.phase = 'waiting'
 
-    const activeSection = this.getActiveSection()
+    const activeSection = this.sectionManager.getActiveSection()
     if (activeSection) {
       this.dispatchTasks()
     }
@@ -1115,14 +924,8 @@ export class SwarmCoordinator {
       target.style.clipPath = 'none'
     }
 
-    // If target has a typing-text child, make sure its final resting text is shown
-    const typingSpan = target.querySelector<HTMLElement>('.typing-text')
-    if (typingSpan) {
-      const fullText = typingSpan.getAttribute('aria-label')
-      if (fullText && typingSpan.textContent !== fullText) {
-        typingSpan.textContent = fullText
-      }
-    }
+    // Ensure TypingText span shows full resting text
+    target.querySelectorAll<HTMLElement>('.typing-text').forEach(restoreTypingText)
   }
 
   private clearAgentOperation(agent: AgentRuntime) {
@@ -1141,6 +944,7 @@ export class SwarmCoordinator {
     agent.revealedCharacters = 0
     agent.paths = []
     agent.pathLengths = []
+    agent.pathTransform = null
     agent.anchors = []
     agent.guide?.remove()
     agent.guide = null
@@ -1162,12 +966,8 @@ export class SwarmCoordinator {
 
   private discardDisconnectedTask(agent: AgentRuntime) {
     const task = agent.task
-    if (task) {
-      const sectionTasks = this.sectionTasks.get(task.sectionId)
-      if (sectionTasks) {
-        const idx = sectionTasks.indexOf(task)
-        if (idx >= 0) sectionTasks.splice(idx, 1)
-      }
+    if (task && task.layerId) {
+      this.dependencyEngine.releaseOperation(task.layerId)
     }
     this.clearAgentOperation(agent)
     agent.task = null
@@ -1177,141 +977,67 @@ export class SwarmCoordinator {
   }
 
   // =========================================================================
-  // SECTION COMPLETION & TRANSITION
+  // SECTION COMPLETION, VERIFICATION & TRANSITION
   // =========================================================================
 
-  private checkSectionCompletion(section: SwarmSectionInfo) {
-    const tasks = this.sectionTasks.get(section.id) ?? []
-    if (tasks.length === 0) return
+  private checkSectionCompletion(section: ManagedSection) {
+    if (section.phase !== 'CONSTRUCTING') return
 
-    // If there are still pending elements waiting for render, don't complete yet
-    const hasPendingInThisSection = Array.from(this.pendingReadiness.values()).some((r) => r.sectionId === section.id)
-    if (hasPendingInThisSection) return
-
-    const allComplete = tasks.every((t) => t.status === 'complete')
+    // 1. Check if all operations in the section's dependency graph are complete
+    const isComplete = this.dependencyEngine.isAllOperationsComplete()
     const anyActiveAgents = this.agents.some((a) => a.task && a.task.sectionId === section.id)
 
-    if (allComplete && !anyActiveAgents) {
-      this.completeSection(section)
+    if (isComplete && !anyActiveAgents) {
+      this.verifyAndCompleteSection(section)
     }
   }
 
-  private completeSection(section: SwarmSectionInfo) {
-    if (section.phase === 'COMPLETED') return
-    section.phase = 'COMPLETED'
-    section.element.style.visibility = 'visible'
-    this.completedSections.add(section.id)
-
-    // Ensure all elements in the section are fully visible
-    section.element.querySelectorAll<HTMLElement>('[data-swarm-building]').forEach((el) => {
-      el.removeAttribute('data-swarm-building')
-      el.setAttribute('data-swarm-built', 'true')
-      el.style.visibility = 'visible'
-      el.style.opacity = '1'
-    })
-
-    this.publishActivity('SECTION COMPLETED', true)
-
-    if (this.currentSectionIndex < this.sections.length - 1) {
-      this.advanceToNextSection()
-    } else {
-      // All sections complete!
-      this.finished = true
-      this.scrollComplete = true
-      this.stopAutoScroll()
-      this.startFollowMode()
-      this.publishActivity('CURSOR FOLLOW MODE', true)
+  private verifyAndCompleteSection(section: ManagedSection) {
+    if (!this.sectionManager.transitionToVerifying(section.id)) {
+      console.error(`Unable to verify completed Swarm section ${section.id}`)
+      return
     }
-  }
+    this.publishActivity('VERIFYING', true)
 
-  private advanceToNextSection() {
-    this.currentSectionIndex++
-    const nextSection = this.sections[this.currentSectionIndex]
-    if (!nextSection) return
-
-    nextSection.phase = 'ACTIVE'
-    this.onSectionChange(nextSection.id)
-
-    // Resume auto-scrolling toward next section
-    this.startAutoScroll()
-  }
-
-  // =========================================================================
-  // AUTO-SCROLLING & USER INTERACTION
-  // =========================================================================
-
-  private startAutoScroll() {
-    if (this.reducedMotion || this.scrollPaused || this.scrollComplete) return
-    this.autoScrolling = true
-    document.documentElement.classList.add('swarm-auto-scrolling')
-    this.publishActivity('AUTO SCROLLING')
-  }
-
-  private stopAutoScroll() {
-    this.autoScrolling = false
-    document.documentElement.classList.remove('swarm-auto-scrolling')
-  }
-
-  private advanceScroll(delta: number) {
-    const activeSection = this.getActiveSection()
-
-    // If active section is waiting to be constructed, check if it's in view
-    if (activeSection && activeSection.phase === 'ACTIVE') {
-      const bounds = activeSection.element.getBoundingClientRect()
-      if (bounds.top <= window.innerHeight * 0.25 || bounds.top <= 100) {
-        this.stopAutoScroll()
-        this.activateSectionConstruction(activeSection)
-        return
-      }
-    }
-
-    const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight)
-    const next = Math.min(maxScroll, window.scrollY + swarmSettings.timing.scrollSpeed * delta / 1000)
-    window.scrollTo({ top: next, behavior: 'instant' })
-    this.lastScrollY = next
-
-    if (next >= maxScroll - 1) {
-      this.stopAutoScroll()
-      if (activeSection && activeSection.phase === 'ACTIVE') {
-        this.activateSectionConstruction(activeSection)
-      }
-    }
-  }
-
-  private pauseForUser(explicit = false) {
-    if (this.scrollManuallyPaused && !explicit) return
-    if (!this.autoScrolling && !this.scrollPaused && !explicit) return
-    if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer)
-    this.resumeTimer = null
-    this.stopAutoScroll()
-    this.scrollPaused = true
-    this.scrollManuallyPaused = explicit
-
-    if (explicit) {
-      this.publishActivity('PAUSED BY VISITOR', true)
+    // Complete all target DOM cleanups and record completion
+    if (!this.sectionManager.verifyAndComplete(section.id)) {
+      console.error(`Unable to complete verified Swarm section ${section.id}`)
       return
     }
 
-    this.resumeTimer = window.setTimeout(() => {
-      this.resumeTimer = null
-      if (!this.running || this.reducedMotion || this.scrollComplete) return
-      this.scrollPaused = false
-      this.scrollManuallyPaused = false
-      const activeSection = this.getActiveSection()
-      if (activeSection && activeSection.phase === 'ACTIVE') {
-        this.startAutoScroll()
-      }
-    }, swarmSettings.timing.resumeDelay)
-    this.publishActivity('PAUSED FOR VISITOR', true)
+    // Accumulate verified stats
+    const stats = this.dependencyEngine.getStats()
+    this.cumulativeCompletedTasks += stats.completed
+    this.cumulativeTotalTasks += stats.total
+
+    this.publishActivity('SECTION COMPLETED', true)
+
+    // Check for next section
+    const nextSection = this.sectionManager.advanceToNext()
+    if (nextSection) {
+      // Resume auto-scrolling toward next section
+      this.scrollController.resumeAfterConstruction()
+    } else {
+      // All sections in the portfolio are completely constructed and verified!
+      this.finishAllSections()
+    }
   }
 
-  private handleUserInterrupt = () => this.pauseForUser()
-
-  private handlePointerInterrupt = (event: PointerEvent) => {
-    const target = event.target
-    if (target instanceof Element && target.closest('.swarm-studio, .swarm-loader')) return
-    this.pauseForUser()
+  private finishAllSections() {
+    this.finished = true
+    this.scrollController.markCompleted()
+    this.stopAutoScroll()
+    this.startFollowMode()
+    this.publishActivity('CURSOR FOLLOW MODE', true)
   }
+
+  private stopAutoScroll() {
+    this.scrollController.stop()
+  }
+
+  // =========================================================================
+  // ANIMATION LOOP & AGENT COORDINATION
+  // =========================================================================
 
   private handlePointerMove = (event: PointerEvent) => {
     if (event.pointerType !== 'mouse' || this.reducedMotion
@@ -1329,21 +1055,6 @@ export class SwarmCoordinator {
     }
   }
 
-  private handleKeyInterrupt = (event: KeyboardEvent) => {
-    if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key)) {
-      this.pauseForUser()
-    }
-  }
-
-  private handleScroll = () => {
-    const currentY = window.scrollY
-    if (this.autoScrolling && Math.abs(currentY - this.lastScrollY) > 3) {
-      this.pauseForUser()
-    }
-    this.lastScrollY = currentY
-    this.updateCachedBoundsOnScroll()
-  }
-
   private handleResize = () => {
     this.agents.forEach((agent) => {
       if (agent.phase !== 'hidden') return
@@ -1351,43 +1062,100 @@ export class SwarmCoordinator {
       agent.position = gateway
       agent.cursor.style.transform = `translate3d(${gateway.x}px, ${gateway.y}px, 0) scale(.01)`
     })
-    this.updateCachedBoundsOnScroll()
+    this.lastCachedScrollY = window.scrollY
+    this.refreshActiveSectionTargets()
   }
 
-  private updateCachedBoundsOnScroll() {
-    for (const tasks of this.sectionTasks.values()) {
-      tasks.forEach((task) => {
-        if (task.status !== 'complete' && task.target.isConnected) {
-          const rect = task.target.getBoundingClientRect()
-          task.bounds = {
-            left: rect.left,
-            top: rect.top,
-            width: Math.max(2, rect.width),
-            height: Math.max(2, rect.height),
-          }
-        }
-      })
+  private updateCachedBoundsOnScroll(scrollY: number) {
+    const deltaY = scrollY - this.lastCachedScrollY
+    this.lastCachedScrollY = scrollY
+    if (deltaY === 0) return
+
+    const activeSection = this.sectionManager.getActiveSection()
+    if (activeSection?.blueprint) {
+      this.snapshotEngine.translateMeasurements(activeSection.blueprint, 0, -deltaY)
+    }
+
+    this.agents.forEach((agent) => {
+      if (agent.task && agent.task.status !== 'complete') {
+        agent.task.bounds = { ...agent.task.bounds, top: agent.task.bounds.top - deltaY }
+        agent.characters.forEach((character) => {
+          character.bounds = { ...character.bounds, top: character.bounds.top - deltaY }
+        })
+      }
+    })
+
+    if (this.entered && activeSection?.phase === 'ACTIVE') {
+      this.dispatchTasks()
     }
   }
 
-  // =========================================================================
-  // ANIMATION LOOP & CURSOR MOVEMENT
-  // =========================================================================
+  private refreshActiveSectionTargets() {
+    const activeSection = this.sectionManager.getActiveSection()
+    if (!activeSection) return
+    if (activeSection.phase !== 'CONSTRUCTING' || !activeSection.blueprint) {
+      if (this.entered && activeSection.phase === 'ACTIVE') this.dispatchTasks()
+      return
+    }
+
+    this.snapshotEngine.refreshMeasurements(activeSection.blueprint)
+    const textAgents: AgentRuntime[] = []
+    const iconAgents: AgentRuntime[] = []
+    this.agents.forEach((agent) => {
+      const task = agent.task
+      if (!task || task.status === 'complete') return
+      const element = activeSection.blueprint?.elements.get(task.elementId ?? '')
+      if (!element) return
+      task.bounds = { ...element.bounds }
+      if (agent.proxy && task.operation === 'type') {
+        agent.proxy.style.transform = `translate3d(${task.bounds.left}px, ${task.bounds.top}px, 0)`
+        agent.proxy.style.width = `${task.bounds.width}px`
+        agent.proxy.dataset.swarmBounds = `${task.bounds.left}:${task.bounds.top}:${task.bounds.width}`
+        textAgents.push(agent)
+      } else if (agent.proxy && task.operation === 'icon') {
+        agent.proxy.style.left = `${task.bounds.left}px`
+        agent.proxy.style.top = `${task.bounds.top}px`
+        agent.proxy.style.width = `${task.bounds.width}px`
+        agent.proxy.style.height = `${task.bounds.height}px`
+        agent.proxy.dataset.swarmBounds = `${task.bounds.left}:${task.bounds.top}:${task.bounds.width}:${task.bounds.height}`
+        iconAgents.push(agent)
+      }
+    })
+    iconAgents.forEach((agent) => {
+      agent.pathTransform = agent.paths[0]?.getScreenCTM() ?? null
+    })
+    textAgents.forEach((agent) => agent.characters.forEach((character) => {
+      const rect = character.element.getBoundingClientRect()
+      character.bounds = {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      }
+    }))
+    this.dispatchTasks()
+  }
 
   private animate = (now: number) => {
     if (!this.running) return
     const delta = Math.min(50, Math.max(0, now - this.lastFrame))
     this.lastFrame = now
 
-    // Recheck any pending elements waiting for render
-    this.processPendingReadiness()
+    // Advance section-aware scrolling if in progress
+    if (this.scrollController.isScrolling()) {
+      const activeSection = this.sectionManager.getActiveSection()
+      const nextTargetEl = activeSection && activeSection.phase === 'ACTIVE'
+        ? activeSection.element
+        : null
 
-    // Section-aware scrolling
-    if (this.autoScrolling && !this.scrollPaused) {
-      this.advanceScroll(delta)
+      this.scrollController.advance(delta, nextTargetEl, () => {
+        if (activeSection && activeSection.phase === 'ACTIVE') {
+          this.activateSectionConstruction(activeSection)
+        }
+      })
     }
 
-    // Update agents
+    // Update all 15 agents
     this.agents.forEach((agent, index) => {
       if (agent.phase === 'hidden' || agent.phase === 'waiting') return
 
@@ -1403,7 +1171,7 @@ export class SwarmCoordinator {
           this.arriveAtGateway(agent)
           if (this.agents.every((item) => item.phase !== 'entering')) {
             this.entered = true
-            const firstSection = this.getActiveSection()
+            const firstSection = this.sectionManager.getActiveSection()
             if (firstSection) {
               this.activateSectionConstruction(firstSection)
             }
@@ -1486,8 +1254,8 @@ export class SwarmCoordinator {
     const bend = Math.min(80, distance * (0.1 + (index % 4) * 0.02))
     const direction = index % 2 === 0 ? 1 : -1
     agent.control = {
-      x: (from.x + to.x) / 2 + Math.sin(index * 1.7 + this.taskSequence) * bend * direction,
-      y: (from.y + to.y) / 2 + Math.cos(index * 1.3 + this.taskSequence) * bend * direction,
+      x: (from.x + to.x) / 2 + Math.sin(index * 1.7) * bend * direction,
+      y: (from.y + to.y) / 2 + Math.cos(index * 1.3) * bend * direction,
     }
   }
 
@@ -1624,9 +1392,11 @@ export class SwarmCoordinator {
   }
 
   private activityState() {
-    if (this.scrollPaused) return 'PAUSED BY VISITOR'
+    if (this.scrollController.isPaused()) {
+      return this.scrollController.getPauseReason() === 'construction' ? 'PAUSED FOR CONSTRUCTION' : 'PAUSED BY VISITOR'
+    }
     if (this.agents.some((agent) => agent.phase === 'following')) return 'CURSOR FOLLOW MODE'
-    if (this.autoScrolling) return 'AUTO SCROLLING'
+    if (this.scrollController.isScrolling()) return 'AUTO SCROLLING'
     if (this.agents.some((agent) => agent.phase === 'entering')) return 'ENTERING'
     if (this.agents.some((agent) => agent.phase === 'to-tool' || agent.phase === 'pickup')) return 'COLLECTING TOOL'
     if (this.agents.some((agent) => agent.phase === 'working')) {
@@ -1649,26 +1419,26 @@ export class SwarmCoordinator {
     const cursors = this.agents.map((agent) => this.cursorState(agent))
     const active = cursors.filter((cursor) => cursor.active)
 
-    let totalTasksCount = 0
-    let completedTasksCount = 0
-    for (const tasks of this.sectionTasks.values()) {
-      totalTasksCount += tasks.length
-      completedTasksCount += tasks.filter((t) => t.status === 'complete').length
-    }
+    const depStats = this.dependencyEngine.getStats()
+    const totalTasksCount = this.cumulativeTotalTasks + depStats.total
+    const completedTasksCount = this.cumulativeCompletedTasks + depStats.completed
 
     const workingAgents = this.agents.filter((agent) => agent.phase === 'working').length
     const coordinatingAgents = this.agents.filter((agent) => ['entering', 'to-tool', 'pickup', 'moving', 'returning'].includes(agent.phase)).length
     const waitingAgents = this.agents.filter((agent) => agent.phase === 'waiting' || agent.phase === 'hidden').length
     const followingAgents = this.agents.filter((agent) => agent.phase === 'following').length
 
-    const activeSec = this.getActiveSection()
+    const sections = this.sectionManager.getSections()
+    const completedSectionsCount = this.sectionManager.getCompletedSectionIds().size
+    const activeSec = this.sectionManager.getActiveSection()
     const activeSecId = activeSec?.id ?? ''
 
-    const sectionRatio = this.sections.length > 0 ? this.completedSections.size / this.sections.length : 0
-    const currentSectionTasks = activeSec ? this.sectionTasks.get(activeSec.id) ?? [] : []
-    const currentCompleted = currentSectionTasks.filter((t) => t.status === 'complete').length
-    const currentRatio = currentSectionTasks.length > 0 ? (currentCompleted / currentSectionTasks.length) / (this.sections.length || 1) : 0
-    const progress = this.finished ? 100 : Math.min(100, Math.floor((sectionRatio + currentRatio) * 100))
+    // Calculate genuine progress percentage based on section completion and verified layer progress
+    const sectionRatio = sections.length > 0 ? completedSectionsCount / sections.length : 0
+    const currentSectionRatio = sections.length > 0 && depStats.total > 0
+      ? (depStats.completed / depStats.total) / sections.length
+      : 0
+    const progress = this.finished ? 100 : Math.min(100, Math.floor((sectionRatio + currentSectionRatio) * 100))
 
     const operation = active.map((c) => c.operation).filter((val, idx, arr) => arr.indexOf(val) === idx).slice(0, 2).join(' · ')
       || (this.finished ? 'Construction complete' : state)
@@ -1690,8 +1460,10 @@ export class SwarmCoordinator {
       completedTasks: completedTasksCount,
       totalTasks: totalTasksCount,
       animationState: state,
-      scrollPaused: this.scrollPaused,
-      scrollComplete: this.scrollComplete,
+      scrollPaused: this.scrollController.isPaused(),
+      scrollPausedForConstruction: this.scrollController.isPaused()
+        && this.scrollController.getPauseReason() === 'construction',
+      scrollComplete: this.scrollController.isCompleted(),
     })
   }
 

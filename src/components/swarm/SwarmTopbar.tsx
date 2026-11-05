@@ -9,6 +9,15 @@ type SwarmTopbarProps = {
 }
 
 export default function SwarmTopbar({ section, activity, onExit, onToggleScroll }: SwarmTopbarProps) {
+  const constructionPaused = activity.scrollPausedForConstruction
+  const scrollLabel = activity.scrollComplete
+    ? 'Automatic scrolling unavailable'
+    : constructionPaused
+      ? 'Automatic scrolling paused during construction'
+      : activity.scrollPaused
+        ? 'Resume automatic scrolling'
+        : 'Pause automatic scrolling'
+
   return <header className="swarm-topbar">
     <div className="swarm-brand"><Orbit aria-hidden="true" /><strong>SWARM STUDIO</strong><span className="swarm-live"><i /> ACTIVE</span></div>
     <div className="swarm-status-main">
@@ -25,7 +34,7 @@ export default function SwarmTopbar({ section, activity, onExit, onToggleScroll 
       <span className="swarm-operation" title={`${activity.operation} · ${activity.completedTasks}/${activity.totalTasks} operations`}>{activity.operation}</span>
       <span className="swarm-progress" aria-label={`Construction progress ${activity.progress}%`}><i style={{ transform: `scaleX(${activity.progress / 100})` }} /></span>
       <span className="swarm-task-count">{activity.completedTasks}/{activity.totalTasks}</span>
-      <button className="swarm-scroll-toggle" type="button" onClick={onToggleScroll} disabled={activity.scrollComplete} aria-label={activity.scrollComplete ? 'Automatic scrolling unavailable' : activity.scrollPaused ? 'Resume automatic scrolling' : 'Pause automatic scrolling'} title={activity.scrollComplete ? 'Automatic scrolling unavailable' : activity.scrollPaused ? 'Resume automatic scrolling' : 'Pause automatic scrolling'}>
+      <button className="swarm-scroll-toggle" type="button" onClick={onToggleScroll} disabled={activity.scrollComplete || constructionPaused} aria-label={scrollLabel} title={scrollLabel}>
         {activity.scrollPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
       </button>
       <button className="swarm-exit" type="button" onClick={onExit}><span>EXIT</span><X aria-hidden="true" /></button>

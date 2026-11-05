@@ -2440,6 +2440,9 @@ body:has(main.site-home) footer.contact-footer {
 html.swarm-canvas-active #root {
   visibility: hidden;
 }
+html.swarm-canvas-active #root > :not(.swarm-activate) {
+  visibility: hidden;
+}
 html.swarm-canvas-active #root .swarm-activate {
   visibility: visible;
 }

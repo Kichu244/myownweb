@@ -23,14 +23,7 @@ export type ElementClassification =
   | 'TEMPORARILY_INTERACTIVE'
   | 'COMPLETED'
 
-export type SectionPhase = 'PENDING' | 'ACTIVE' | 'CONSTRUCTING' | 'COMPLETED'
-
-export type SwarmSectionInfo = {
-  id: string
-  label: string
-  phase: SectionPhase
-  element: HTMLElement
-}
+export type SectionPhase = 'PENDING' | 'ACTIVE' | 'CONSTRUCTING' | 'VERIFYING' | 'COMPLETED'
 
 export type SwarmIdentity = {
   id: SwarmIdentityId
@@ -63,17 +56,136 @@ export type SwarmTargetBounds = {
   height: number
 }
 
+// ============================================================================
+// VISUAL BLUEPRINT SCHEMA (PART 1)
+// ============================================================================
+
+export type VisualElementType =
+  | 'section'
+  | 'container'
+  | 'card'
+  | 'button'
+  | 'heading'
+  | 'text'
+  | 'image'
+  | 'icon'
+  | 'divider'
+  | 'badge'
+  | 'decoration'
+
+export type ComputedVisualProperties = {
+  backgroundColor: string
+  borderColor: string
+  borderWidth: string
+  borderRadius: string
+  borderStyle: string
+  color: string
+  fontFamily: string
+  fontSize: string
+  fontWeight: string
+  lineHeight: string
+  letterSpacing: string
+  textAlign: string
+  opacity: string
+  zIndex: string
+  boxShadow: string
+  hasBackground: boolean
+  hasBorder: boolean
+  hasShadow: boolean
+}
+
+export type BlueprintLayerKind =
+  | 'geometry'
+  | 'background'
+  | 'border'
+  | 'text'
+  | 'image'
+  | 'icon'
+  | 'styling'
+  | 'alignment'
+
+export type BlueprintLayerOperation = {
+  id: string
+  elementId: string
+  sectionId: string
+  layer: BlueprintLayerKind
+  tool: SwarmTool
+  description: string
+  bounds: SwarmTargetBounds
+  status: 'queued' | 'collecting' | 'working' | 'complete'
+  dependencies: string[]
+  duration: number
+  reservedBy?: string | null
+  metadata?: {
+    text?: string
+    fontFamily?: string
+    fontSize?: string
+    fontWeight?: string
+    textColor?: string
+    bgColor?: string
+    borderColor?: string
+    borderRadius?: string
+    imageSrc?: string
+    svgPaths?: SVGPathElement[]
+  }
+}
+
+export type VisualBlueprintElement = {
+  id: string
+  parentId: string | null
+  sectionId: string
+  type: VisualElementType
+  domNode: SwarmElement
+  bounds: SwarmTargetBounds
+  visualProperties: ComputedVisualProperties
+  textContent: string
+  imageSource: string | null
+  childIds: string[]
+  layerOperations: BlueprintLayerOperation[]
+  eligibility: 'constructible' | 'exempt' | 'system'
+  readiness: 'ready' | 'waiting_render' | 'temporarily_interactive'
+  status: 'pending' | 'in_progress' | 'completed'
+  dependencies: string[]
+}
+
+export type SectionVisualBlueprint = {
+  sectionId: string
+  label: string
+  sectionElement: HTMLElement
+  bounds: SwarmTargetBounds
+  elements: Map<string, VisualBlueprintElement>
+  rootElementIds: string[]
+  layers: BlueprintLayerOperation[]
+  phase: SectionPhase
+  isReady: boolean
+  isCompleted: boolean
+}
+
+export type SwarmSectionInfo = {
+  id: string
+  label: string
+  phase: SectionPhase
+  element: HTMLElement
+  blueprint?: SectionVisualBlueprint
+}
+
 export type SwarmTask = {
   id: string
+  layerId?: string
+  elementId?: string
   target: SwarmElement
   sectionId: string
   kind: SwarmTargetKind | 'button' | 'decoration'
   operation: 'type' | 'draw' | 'image' | 'colour' | 'align' | 'icon' | 'transform'
+  layerKind?: BlueprintLayerKind
   tool: SwarmTool
   description: string
   status: 'queued' | 'collecting' | 'working' | 'complete'
   duration: number
-  bounds?: SwarmTargetBounds
+  bounds: SwarmTargetBounds
+  dependencies?: string[]
+  reservedBy?: string | null
+  metadata?: BlueprintLayerOperation['metadata']
 }
 
 export type SwarmCursorState = SwarmIdentity & {
@@ -97,6 +209,7 @@ export type SwarmActivity = {
   totalTasks: number
   animationState: string
   scrollPaused: boolean
+  scrollPausedForConstruction: boolean
   scrollComplete: boolean
 }
 

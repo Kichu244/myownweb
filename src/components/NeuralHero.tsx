@@ -46,7 +46,7 @@ export function TypingText({ text, active, delay = 0, speed = 22, emphasis, redu
   const visible = text.slice(0, count)
   const emphasisStart = emphasis ? text.indexOf(emphasis) : -1
   const isTyping = active && !reduceMotion && count < text.length
-  return <span className={`typing-text${isTyping ? ' is-typing' : ''}`} aria-label={text}>
+  return <span className={`typing-text${isTyping ? ' is-typing' : ''}`} aria-label={text} data-emphasis={emphasis || undefined}>
     {emphasisStart < 0 ? visible : <>{visible.slice(0, emphasisStart)}{count > emphasisStart && <strong>{visible.slice(emphasisStart, emphasisStart + emphasis!.length)}</strong>}{visible.length > emphasisStart + emphasis!.length && visible.slice(emphasisStart + emphasis!.length)}</>}
   </span>
 }

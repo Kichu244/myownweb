@@ -31,6 +31,7 @@ const initialActivity: SwarmActivity = {
   totalTasks: 0,
   animationState: 'INITIALIZING',
   scrollPaused: false,
+  scrollPausedForConstruction: false,
   scrollComplete: false,
 }
 
