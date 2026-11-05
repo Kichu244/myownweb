@@ -99,10 +99,6 @@ export default function SwarmStudio({ origin, agentCount, onExit }: { origin: Sw
     <div className="swarm-cursor-layer" aria-hidden="true">
       {swarmIdentities.slice(0, cursorCount).map((identity, index) => <SwarmCursor
         identity={identity}
-        active={activity.cursors[index]?.active ?? false}
-        tool={activity.cursors[index]?.tool ?? null}
-        operation={activity.cursors[index]?.operation ?? 'Waiting for task'}
-        state={activity.cursors[index]?.state ?? 'waiting'}
         key={identity.id}
         register={(element) => { cursorRefs.current[index] = element }}
       />)}

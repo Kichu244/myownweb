@@ -16,6 +16,22 @@ export type SwarmIdentityId = `agent-${string}`
 export type SwarmTargetKind = 'heading' | 'text' | 'image' | 'icon' | 'card' | 'style' | 'layout' | 'container'
 export type SwarmElement = HTMLElement | SVGSVGElement
 
+export type ElementClassification =
+  | 'CONSTRUCTIBLE'
+  | 'WAITING_FOR_RENDER'
+  | 'READY_FOR_CONSTRUCTION'
+  | 'TEMPORARILY_INTERACTIVE'
+  | 'COMPLETED'
+
+export type SectionPhase = 'PENDING' | 'ACTIVE' | 'CONSTRUCTING' | 'COMPLETED'
+
+export type SwarmSectionInfo = {
+  id: string
+  label: string
+  phase: SectionPhase
+  element: HTMLElement
+}
+
 export type SwarmIdentity = {
   id: SwarmIdentityId
   name: string
@@ -40,15 +56,24 @@ export const swarmIdentities: SwarmIdentity[] = [
   { id: 'agent-15', name: 'AGENT 15', colour: '#FF8299' },
 ]
 
+export type SwarmTargetBounds = {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
 export type SwarmTask = {
   id: string
   target: SwarmElement
+  sectionId: string
   kind: SwarmTargetKind | 'button' | 'decoration'
   operation: 'type' | 'draw' | 'image' | 'colour' | 'align' | 'icon' | 'transform'
   tool: SwarmTool
   description: string
   status: 'queued' | 'collecting' | 'working' | 'complete'
   duration: number
+  bounds?: SwarmTargetBounds
 }
 
 export type SwarmCursorState = SwarmIdentity & {
