@@ -32,21 +32,21 @@ export type SwarmIdentity = {
 }
 
 export const swarmIdentities: SwarmIdentity[] = [
-  { id: 'agent-01', name: 'AGENT 01', colour: '#258BFF' },
-  { id: 'agent-02', name: 'AGENT 02', colour: '#A78BFA' },
-  { id: 'agent-03', name: 'AGENT 03', colour: '#42D9F5' },
-  { id: 'agent-04', name: 'AGENT 04', colour: '#F5B942' },
-  { id: 'agent-05', name: 'AGENT 05', colour: '#43D9A3' },
-  { id: 'agent-06', name: 'AGENT 06', colour: '#F477B7' },
-  { id: 'agent-07', name: 'AGENT 07', colour: '#FF795E' },
-  { id: 'agent-08', name: 'AGENT 08', colour: '#8B9DFF' },
-  { id: 'agent-09', name: 'AGENT 09', colour: '#D7A6FF' },
-  { id: 'agent-10', name: 'AGENT 10', colour: '#75E6C1' },
-  { id: 'agent-11', name: 'AGENT 11', colour: '#FFB86B' },
-  { id: 'agent-12', name: 'AGENT 12', colour: '#64E1D1' },
-  { id: 'agent-13', name: 'AGENT 13', colour: '#E58BFF' },
-  { id: 'agent-14', name: 'AGENT 14', colour: '#B5D66B' },
-  { id: 'agent-15', name: 'AGENT 15', colour: '#FF8299' },
+  { id: 'agent-01', name: 'AGENT 01', colour: '#5483B3' },
+  { id: 'agent-02', name: 'AGENT 02', colour: '#7DA0CA' },
+  { id: 'agent-03', name: 'AGENT 03', colour: '#C1E8FF' },
+  { id: 'agent-04', name: 'AGENT 04', colour: '#5483B3' },
+  { id: 'agent-05', name: 'AGENT 05', colour: '#7DA0CA' },
+  { id: 'agent-06', name: 'AGENT 06', colour: '#C1E8FF' },
+  { id: 'agent-07', name: 'AGENT 07', colour: '#5483B3' },
+  { id: 'agent-08', name: 'AGENT 08', colour: '#7DA0CA' },
+  { id: 'agent-09', name: 'AGENT 09', colour: '#C1E8FF' },
+  { id: 'agent-10', name: 'AGENT 10', colour: '#5483B3' },
+  { id: 'agent-11', name: 'AGENT 11', colour: '#7DA0CA' },
+  { id: 'agent-12', name: 'AGENT 12', colour: '#C1E8FF' },
+  { id: 'agent-13', name: 'AGENT 13', colour: '#5483B3' },
+  { id: 'agent-14', name: 'AGENT 14', colour: '#7DA0CA' },
+  { id: 'agent-15', name: 'AGENT 15', colour: '#C1E8FF' },
 ]
 
 export type SwarmTargetBounds = {

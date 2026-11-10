@@ -1,7 +1,23 @@
+// ============================================================
+// SkillsNetwork.tsx — Skills Section Component
+// Rendered by: App.tsx (page === 'skills' || isHome)
+// Styles: styles.css → [SKILL-01] through [SKILL-17]
+// ============================================================
+
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 
+// ------------------------------------------------------------
+// Type Definition
+// ------------------------------------------------------------
+
 type SkillGroup = { name: string; items: string[] }
+
+// ------------------------------------------------------------
+// Skill Descriptions Map
+// Used to populate the detail text in each leaf node.
+// Displayed in: [SKILL-14] Skills Tree Leaf Copy → <small>
+// ------------------------------------------------------------
 
 const skillDescriptions: Record<string, string> = {
   Python: 'Purpose: clean support exports and automate Q&A extraction. Project: Support-to-Knowledge Pipeline during my Neopraxis internship.',
@@ -33,6 +49,13 @@ const skillDescriptions: Record<string, string> = {
   'Framer Motion': 'Purpose: add interface transitions and animated reveals. Projects: portfolio and AutoChip India website.'
 }
 
+// ============================================================
+// SkillsNetwork — Default Export
+// Renders the interactive three-tier skill tree:
+//   Root → Category → Leaf (technology detail)
+// Styles: styles.css → [SKILL-01] through [SKILL-17]
+// ============================================================
+
 export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
   const [categoryIndex, setCategoryIndex] = useState(0)
   const [technology, setTechnology] = useState(groups[0]?.items[0] ?? '')
@@ -44,11 +67,21 @@ export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
 
   if (!group) return null
 
+  // ------------------------------------------------------------
+  // selectCategory — Switches active skill category
+  // Resets the selected technology to the first in the new group
+  // ------------------------------------------------------------
   const selectCategory = (index: number) => {
     setCategoryIndex(index)
     setTechnology(groups[index]?.items[0] ?? '')
   }
 
+  // ------------------------------------------------------------
+  // SVG Wire Connection Calculator
+  // Computes bezier curve paths from parent → categories
+  // and from active category → leaf technology items.
+  // Used by: [SKILL-04] Skills Tree SVG Connections
+  // ------------------------------------------------------------
   useEffect(() => {
     const network = networkRef.current
     if (!network) return
@@ -96,46 +129,98 @@ export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
     return () => observer.disconnect()
   }, [group.name, technology, categoryIndex])
 
-  return <section className="skills section-pad" id="skills" data-swarm-section="skills">
-    <div className="container" data-swarm="container">
-      <div className="section-title skills-title"><h2 data-swarm="heading">The technologies I use and the skills I bring to every project.</h2></div>
-      <div className="skills-network" data-swarm="container" ref={networkRef}>
-        <svg className="skills-tree-connections" data-swarm="style" viewBox={`0 0 ${connectionSize.width} ${connectionSize.height}`} preserveAspectRatio="none" aria-hidden="true">{connections.map((connection) => <path key={connection.key} className="skills-wire" d={connection.path} pathLength={1} style={{ animationDelay: reduceMotion ? '0s' : `${connection.delay}s` }} />)}</svg>
-        <div className="skills-tree-parent" data-swarm="card" aria-label="Parent node: skills">
-          <strong>My skills</strong>
-        </div>
-        <div className="skills-tree-panel" aria-label="Interactive skill tree">
-          <div className="skills-tree-category-stage">
-            <span className="skills-tree-stage-label" data-swarm="style">SKILL AREAS</span>
-            <div className="skills-category-list" role="group" aria-label="Skill categories">
-              {groups.map((item, index) => <button className={`skills-category skills-tree-category${categoryIndex === index ? ' is-active' : ''}`} data-swarm="card" type="button" key={item.name} aria-pressed={categoryIndex === index} onClick={() => selectCategory(index)}>
-                <span>{item.name}</span>
-              </button>)}
-            </div>
+  return (
+    // [SKILL-01] Skills Section Wrapper
+    // Styles: styles.css → [SKILL-01] (.skills, .section-pad)
+    <section className="skills section-pad" id="skills" data-swarm-section="skills">
+
+      {/* [SKILL-02] Skills Title — Section Heading
+          Styles: styles.css → [SKILL-02] (.skills-title, .section-title) */}
+      <div className="container" data-swarm="container">
+        <div className="section-title skills-title"><h2 data-swarm="heading">The technologies I use and the skills I bring to every project.</h2></div>
+
+        {/* [SKILL-03] Skills Network Grid Container — Three-Column Layout
+            Ref: networkRef — used for connection path calculations
+            Styles: styles.css → [SKILL-03] (.skills-network) */}
+        <div className="skills-network" data-swarm="container" ref={networkRef}>
+
+          {/* [SKILL-04] Skills Tree SVG Connections / Wires
+              Bezier paths drawn from parent → categories → leaves.
+              Styles: styles.css → [SKILL-04] (.skills-tree-connections, .skills-wire)
+              Animation: styles.css → [SKILL-16] (@keyframes skill-wire-draw) */}
+          <svg className="skills-tree-connections" data-swarm="style" viewBox={`0 0 ${connectionSize.width} ${connectionSize.height}`} preserveAspectRatio="none" aria-hidden="true">{connections.map((connection) => <path key={connection.key} className="skills-wire" d={connection.path} pathLength={1} style={{ animationDelay: reduceMotion ? '0s' : `${connection.delay}s` }} />)}</svg>
+
+          {/* [SKILL-05] Skills Tree Parent Node — Root "My skills" Bubble
+              Styles: styles.css → [SKILL-05] (.skills-tree-parent) */}
+          <div className="skills-tree-parent" data-swarm="card" aria-label="Parent node: skills">
+            <strong>My skills</strong>
           </div>
-          <div className="skills-tree-detail-stage" aria-live="polite">
-            <span className="skills-tree-stage-label" data-swarm="style">PURPOSE / PROJECT · {group.name}</span>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div className="skills-tree-leaves" key={group.name} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} transition={{ duration: reduceMotion ? 0 : .3 }}>
-                {group.items.map((item, index) => <motion.button
-                  type="button"
-                  key={item}
-                  className={`skills-tree-leaf${technology === item ? ' is-selected' : ''}`}
-                  data-swarm="card"
-                  aria-pressed={technology === item}
-                  onClick={() => setTechnology(item)}
-                  initial={reduceMotion ? false : { opacity: 0, x: 12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : .35, delay: reduceMotion ? 0 : .1 + index * .08, ease: 'easeOut' }}
-                >
-                  <span className="skills-tree-node-dot" aria-hidden="true" />
-                  <span className="skills-tree-leaf-copy"><strong>{item}</strong><small>{skillDescriptions[item] ?? `I use ${item} as part of my work in ${group.name}.`}</small></span>
-                </motion.button>)}
-              </motion.div>
-            </AnimatePresence>
+
+          {/* [SKILL-06] Skills Tree Panel — Two-Column Panel (Categories + Leaves)
+              Styles: styles.css → [SKILL-06] (.skills-tree-panel) */}
+          <div className="skills-tree-panel" aria-label="Interactive skill tree">
+
+            {/* [SKILL-07] Skills Tree Category Stage — Left Panel (category buttons)
+                Styles: styles.css → [SKILL-07] (.skills-tree-category-stage) */}
+            <div className="skills-tree-category-stage">
+
+              {/* [SKILL-11] Skills Tree Stage Label — "SKILL AREAS" eyebrow
+                  Styles: styles.css → [SKILL-11] (.skills-tree-stage-label) */}
+              <span className="skills-tree-stage-label" data-swarm="style">SKILL AREAS</span>
+
+              {/* [SKILL-08] Skills Category List — Vertical List of Category Buttons
+                  Styles: styles.css → [SKILL-08] (.skills-category-list) */}
+              <div className="skills-category-list" role="group" aria-label="Skill categories">
+                {/* [SKILL-09] Skills Category Button — Individual Category (Python, Web, IoT …)
+                    Active state: .is-active
+                    Styles: styles.css → [SKILL-09] (.skills-category, .skills-tree-category, .is-active) */}
+                {groups.map((item, index) => <button className={`skills-category skills-tree-category${categoryIndex === index ? ' is-active' : ''}`} data-swarm="card" type="button" key={item.name} aria-pressed={categoryIndex === index} onClick={() => selectCategory(index)}>
+                  <span>{item.name}</span>
+                </button>)}
+              </div>
+            </div>
+
+            {/* [SKILL-10] Skills Tree Detail Stage — Right Panel (leaf technology items)
+                Styles: styles.css → [SKILL-10] (.skills-tree-detail-stage) */}
+            <div className="skills-tree-detail-stage" aria-live="polite">
+
+              {/* [SKILL-11] Skills Tree Stage Label — "PURPOSE / PROJECT · {group}" eyebrow
+                  Styles: styles.css → [SKILL-11] (.skills-tree-stage-label) */}
+              <span className="skills-tree-stage-label" data-swarm="style">PURPOSE / PROJECT · {group.name}</span>
+
+              <AnimatePresence mode="wait" initial={false}>
+                {/* [SKILL-12] Skills Tree Leaves Container — Grid of Leaf Items
+                    Animated in/out when category changes.
+                    Styles: styles.css → [SKILL-12] (.skills-tree-leaves) */}
+                <motion.div className="skills-tree-leaves" key={group.name} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduceMotion ? undefined : { opacity: 0 }} transition={{ duration: reduceMotion ? 0 : .3 }}>
+                  {group.items.map((item, index) => <motion.button
+                    type="button"
+                    key={item}
+                    // [SKILL-13] Skills Tree Leaf Item — Individual Technology Button
+                    // Active state: .is-selected
+                    // Styles: styles.css → [SKILL-13] (.skills-tree-leaf, .is-selected)
+                    className={`skills-tree-leaf${technology === item ? ' is-selected' : ''}`}
+                    data-swarm="card"
+                    aria-pressed={technology === item}
+                    onClick={() => setTechnology(item)}
+                    initial={reduceMotion ? false : { opacity: 0, x: 12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : .35, delay: reduceMotion ? 0 : .1 + index * .08, ease: 'easeOut' }}
+                  >
+                    {/* [SKILL-15] Skills Tree Node Dot — Small Circular Indicator
+                        Styles: styles.css → [SKILL-15] (.skills-tree-node-dot) */}
+                    <span className="skills-tree-node-dot" aria-hidden="true" />
+
+                    {/* [SKILL-14] Skills Tree Leaf Copy — Technology Name + Description
+                        Styles: styles.css → [SKILL-14] (.skills-tree-leaf-copy) */}
+                    <span className="skills-tree-leaf-copy"><strong>{item}</strong><small>{skillDescriptions[item] ?? `I use ${item} as part of my work in ${group.name}.`}</small></span>
+                  </motion.button>)}
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  )
 }

@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { flushSync } from 'react-dom'
-import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, BrainCircuit, ClipboardCheck, Cpu, KeyRound, Menu, Moon, PanelsTopLeft, Pause, Play, Smartphone, Sun, UserRound, Wifi, X } from 'lucide-react'
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Menu, Moon, Pause, Play, Sun, UserRound, X } from 'lucide-react'
 import { profile, projects, skills, type Project } from './data'
 import NeuralHero, { TypingText } from './components/NeuralHero'
 import ProjectExplorer from './components/ProjectExplorer'
+import HorizontalProjects from './components/HorizontalProjects'
 import SkillsNetwork from './components/SkillsNetwork'
 import AboutIdentity from './components/AboutIdentity'
 import ExperienceEducation from './components/ExperienceEducation'
@@ -13,23 +14,8 @@ import SwarmController from './components/swarm/SwarmController'
 import { pageFromPath, withBasePath } from './navigation'
 
 const nav = [['About', 'about'], ['Skills', 'skills'], ['Projects', 'projects'], ['Experience', 'experience'], ['Contact', 'contact']]
-function ProjectIcon({ variant }: { variant: Project['visualization'] }) {
-  const Icon = variant === 'attendance-flow' ? ClipboardCheck
-    : variant === 'ai-processing' ? BrainCircuit
-    : variant === 'iot-switchboard' ? Cpu
-    : variant === 'android-monitor' ? Smartphone
-    : variant === 'corporate-web' ? PanelsTopLeft
-    : variant === 'concept-key' ? KeyRound
-    : variant === 'iot-hub' ? Wifi
-    : PanelsTopLeft
-  return <Icon aria-hidden="true" />
-}
-const reveal: Variants = { hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transition: { duration: .6, ease: [0.22, 1, 0.36, 1] } } }
-const smoothStopProgress = (progress: number) => 2 * progress - 5 * progress ** 4 + 6 * progress ** 5 - 2 * progress ** 6
 
-function SectionTitle({ title, note }: { title: string; note?: string }) {
-  return <div className="section-title"><h2 data-swarm="heading">{title}</h2>{note && <p data-swarm="text">{note}</p>}</div>
-}
+const smoothStopProgress = (progress: number) => 2 * progress - 5 * progress ** 4 + 6 * progress ** 5 - 2 * progress ** 6
 
 function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
   const [overviewVisible, setOverviewVisible] = useState(false)
@@ -60,17 +46,7 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
   </section>
 }
 
-function ProjectsPage({ reduceMotion, filter, setFilter, onSelect }: { reduceMotion: boolean | null; filter: string; setFilter: (value: string) => void; onSelect: (project: Project) => void }) {
-  const categories = ['All', ...new Set(projects.map((project) => project.category))]
-  const visibleProjects = projects.filter((project) => filter === 'All' || project.category === filter)
-  return <section className="projects section-pad" id="projects" data-swarm-section="projects"><div className="container" data-swarm="container"><motion.div className="projects-heading" variants={reveal} initial={reduceMotion ? false : 'hidden'} animate="show"><div><SectionTitle title="Built to solve. Made to learn." note="Software projects, local-network experiments, and clearly labelled hardware concepts." /></div><span className="project-count" data-swarm="style">{String(visibleProjects.length).padStart(2, '0')} <i>/ {String(projects.length).padStart(2, '0')}</i></span></motion.div>
-    <div className="filter-row" data-swarm="style" role="group" aria-label="Filter projects by category">{categories.map((cat) => <button key={cat} className={filter === cat ? 'filter active' : 'filter'} aria-pressed={filter === cat} onClick={() => setFilter(cat)}>{cat}<span>{cat === 'All' ? projects.length : projects.filter((p) => p.category === cat).length}</span></button>)}</div>
-    <div className="project-list">{visibleProjects.map((project, i) => <motion.button id={project.id} key={project.id} layout onClick={() => onSelect(project)} className={`project-row glass-floating project-${project.number}`} data-swarm="card" initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : .4, delay: reduceMotion ? 0 : i * .035 }}>
-      <span className="project-number">{project.number}</span><span className="project-visual project-icon-card glass-deep" aria-hidden="true" data-swarm="image"><ProjectIcon variant={project.visualization} /></span>
-      <span className="project-main"><span className="project-category">{project.category} <i>·</i> {project.status}</span><strong data-swarm="heading">{project.title}</strong><span className="project-summary" data-swarm="text">{project.description}</span><span className="project-stack">{project.stack.slice(0, 4).map((tech) => <i key={tech}>{tech}</i>)}</span></span><span className="project-open"><ArrowUpRight size={20} /></span>
-    </motion.button>)}</div><p className="status-note" data-swarm="text"><span className="status-dot" /> Project statuses distinguish reported work, concepts, plans, and details awaiting verification.</p>
-  </div></section>
-}
+
 
 function App() {
   const [path, setPath] = useState(() => window.location.pathname)
@@ -83,7 +59,6 @@ function App() {
   const [autoScrollCountdown, setAutoScrollCountdown] = useState<number | null>(null)
   const [autoScrollFading, setAutoScrollFading] = useState(false)
   const [autoScrollVisible, setAutoScrollVisible] = useState(true)
-  const [filter, setFilter] = useState('All')
   const [selected, setSelected] = useState<Project | null>(null)
   const menuToggleRef = useRef<HTMLButtonElement>(null)
   const autoScrollFrameRef = useRef<number | null>(null)
@@ -537,7 +512,7 @@ function App() {
           {isHome && <section className="home-second-screen" aria-label="Quick introduction and links"><HomeOverview reduceMotion={reduceMotion} /></section>}
           {(page === 'about' || isHome) && <AboutIdentity homePage={isHome} />}
           {(page === 'skills' || isHome) && <SkillsNetwork groups={skills} />}
-          {(page === 'projects' || isHome) && <ProjectsPage reduceMotion={reduceMotion} filter={filter} setFilter={setFilter} onSelect={setSelected} />}
+          {(page === 'projects' || isHome) && <HorizontalProjects reduceMotion={reduceMotion} onSelect={setSelected} />}
           {(page === 'experience' || isHome) && <ExperienceEducation homePage={isHome} />}
           {(page === 'contact' || isHome) && <ContactSection />}
           {isHome && <section className="home-contact-strip"><div className="container"><span className="eyebrow">HAVE A PROJECT IN MIND?</span><h2>Let’s make something useful.</h2><a className="button button-primary" href="#contact">Get in touch <ArrowUpRight size={16} /></a></div></section>}

@@ -1,9 +1,21 @@
+// ============================================================
+// AboutIdentity.tsx — About Section Component
+// Rendered by: App.tsx (page === 'about' || isHome)
+// Styles: styles.css → [ABOUT-01] through [ABOUT-17]
+// ============================================================
+
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { withBasePath } from '../navigation'
 import { profile, skills } from '../data'
 import { TypingText } from './NeuralHero'
+
+// ============================================================
+// AboutIdentity — Default Export
+// Renders the animated personal introduction (About) section.
+// Styles: styles.css → [ABOUT-01] through [ABOUT-17]
+// ============================================================
 
 export default function AboutIdentity({ homePage = false }: { homePage?: boolean }) {
   const reduceMotion = useReducedMotion()
@@ -12,6 +24,11 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
   const [lineIndex, setLineIndex] = useState(0)
   const [conversationComplete, setConversationComplete] = useState(false)
   const conversationRef = useRef<HTMLDivElement>(null)
+
+  // ------------------------------------------------------------
+  // Conversation Lines — Sequential animated intro text
+  // Used by: [ABOUT-08] Identity Conversation Box
+  // ------------------------------------------------------------
   const conversation = [
     { text: '👋 Hey there! Hearty Welcome, You Came Here to Know More About Me! Right?', className: 'identity-lead' },
     { text: `Okay Fine, I'll tell you! I'm ${profile.name}. Glad you're here! 😊`, className: 'identity-lead' },
@@ -28,6 +45,11 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
     { text: `Who knows? Maybe you'll find something interesting along the way. 😉`, className: 'identity-body' },
   ] 
   const typingSpeed = 18
+
+  // ------------------------------------------------------------
+  // Final Summary Lines — Shown after conversation completes
+  // Used by: [ABOUT-10] Identity Conversation Complete
+  // ------------------------------------------------------------
   const finalSummaryLines = [
     `${profile.name}, a BCA Cyber Security graduate and developer passionate about building practical, technology-driven solutions.`,
     'I work with Python, Odoo, backend development, and web technologies, while exploring AI, automation, and cybersecurity.',
@@ -36,6 +58,10 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
     'My goal is to grow as a developer, strengthen my technical skills, and build innovative solutions that make a meaningful difference.',
   ]
 
+  // ------------------------------------------------------------
+  // Intersection Observer — Triggers conversation animation
+  // when the section scrolls into view
+  // ------------------------------------------------------------
   useEffect(() => {
     const target = conversationRef.current
     if (!target) return
@@ -48,6 +74,10 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
     return () => observer.disconnect()
   }, [])
 
+  // ------------------------------------------------------------
+  // Conversation line progression timer
+  // Advances lineIndex after each line's typing duration
+  // ------------------------------------------------------------
   useEffect(() => {
     if (!conversationVisible || conversationComplete) return
     if (reduceMotion) {
@@ -62,76 +92,124 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
     return () => window.clearTimeout(timer)
   }, [conversationVisible, conversationComplete, lineIndex, reduceMotion])
 
-  return <section className="about section-pad" id="about" data-swarm-section="about">
-    <div className="container identity-layout" data-swarm="container">
-      <div className="identity-visual-column">
-        <aside className="identity-visual glass-crystal" data-swarm="image">
-          <img
-            className="identity-photo"
-            src={`${import.meta.env.BASE_URL}images/mypic2.png`}
-            alt={`${profile.name}, portrait`}
-          />      
-        </aside>
-        <nav className="identity-actions" data-swarm="layout" aria-label="Explore more about me">
-          <a className="button button-primary" href={homePage ? '#skills' : withBasePath('/skills')}>View my skills <ArrowRight size={15} aria-hidden="true" /></a>
-          <a className="button button-quiet" href={homePage ? '#experience' : withBasePath('/experience')}>View my experience <ArrowRight size={15} aria-hidden="true" /></a>
-        </nav>
-      </div>
+  return (
+    // [ABOUT-01] About Section Wrapper
+    // Styles: styles.css → [ABOUT-01] (.about, .section-pad)
+    <section className="about section-pad" id="about" data-swarm-section="about">
 
-      <motion.div className="identity-copy" initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduceMotion ? 0 : .55 }}>
-        <h2 data-swarm="heading">Who am <span>I&nbsp;?&nbsp;</span></h2>
-        <motion.div
-          className="identity-conversation"
-          data-swarm="text"
-          ref={conversationRef}
-          aria-label="A personal introduction"
-          aria-live="polite"
-          initial={false}
-          animate={{ height: conversationComplete ? 'auto' : 190 }}
-          transition={{ height: { duration: reduceMotion ? 0 : .9, ease: 'easeInOut' } }}
-        >
-          <AnimatePresence initial={false} mode="popLayout">
-            {conversationVisible && !conversationComplete && conversation.slice(Math.max(0, lineIndex - 1), lineIndex + 1).map((line, index) => {
-              const currentLineIndex = Math.max(0, lineIndex - 1) + index
-              return <motion.p
-                className={`identity-conversation-line ${line.className}`}
-                key={currentLineIndex}
-                layout
-                initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -32 }}
-                transition={{ duration: reduceMotion ? 0 : .7, ease: 'easeInOut', layout: { duration: .7, ease: 'easeInOut' } }}
-              ><TypingText text={line.text} active={conversationVisible && !conversationComplete} speed={typingSpeed} reduceMotion={reduceMotion} /></motion.p>
-            })}
-            {conversationComplete && <motion.p
-              className="identity-conversation-complete"
-              key="complete"
-              aria-label={finalSummaryLines.join(' ')}
-              initial={false}
-            >{finalSummaryLines.map((line, index) => <motion.span
-              className="identity-summary-line"
-              key={line}
-              aria-hidden="true"
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: reduceMotion ? 0 : .7, delay: reduceMotion ? 0 : index * .24, ease: 'easeInOut' }}
-            >{line} </motion.span>)}</motion.p>}
-          </AnimatePresence>
-        </motion.div>
-        <div className="identity-focus" data-swarm="style">
-          {!conversationComplete && <motion.button
-            className="identity-skip"
-            type="button"
-            onClick={() => { setConversationVisible(true); setConversationComplete(true) }}
-            initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 1.5, delay: reduceMotion ? 0 : 3, ease: [0.22, 1, 0.36, 1] }}
-          >Skip intro <ArrowRight size={12} aria-hidden="true" /></motion.button>}
-          <span className="eyebrow">CURRENT AREAS OF FOCUS</span>
-          <div>{focusGroups.map((group) => <span className="identity-focus-chip" key={group.name}><i aria-hidden="true" />{group.name}</span>)}</div>
+      {/* [ABOUT-02] Identity Layout Grid — Two-Column Layout
+          Styles: styles.css → [ABOUT-02] (.identity-layout, .container) */}
+      <div className="container identity-layout" data-swarm="container">
+
+        {/* [ABOUT-03] Identity Visual Column — Left Column (Photo + Buttons)
+            Styles: styles.css → [ABOUT-03] (.identity-visual-column) */}
+        <div className="identity-visual-column">
+
+          {/* [ABOUT-04] Identity Photo Image — Profile Photo Card
+              Styles: styles.css → [ABOUT-04] (.identity-visual.glass-crystal, .identity-photo) */}
+          <aside className="identity-visual glass-crystal" data-swarm="image">
+            <img
+              className="identity-photo"
+              src={`${import.meta.env.BASE_URL}images/mypic2.png`}
+              alt={`${profile.name}, portrait`}
+            />      
+          </aside>
+
+          {/* [ABOUT-16] Identity Actions Buttons — View Skills / View Experience
+              Styles: styles.css → [ABOUT-16] (.identity-actions, .button, .button-primary, .button-quiet) */}
+          <nav className="identity-actions" data-swarm="layout" aria-label="Explore more about me">
+            <a className="button button-primary" href={homePage ? '#skills' : withBasePath('/skills')}>View my skills <ArrowRight size={15} aria-hidden="true" /></a>
+            <a className="button button-quiet" href={homePage ? '#experience' : withBasePath('/experience')}>View my experience <ArrowRight size={15} aria-hidden="true" /></a>
+          </nav>
         </div>
-        <div className="identity-location" data-swarm="style"><span className="location-dot" />BENGALURU, KARNATAKA, INDIA</div>
-      </motion.div>
-    </div>
-  </section>
+
+        {/* [ABOUT-06] Identity Copy Column — Right Column (Text Content)
+            Styles: styles.css → [ABOUT-06] (.identity-copy) */}
+        <motion.div className="identity-copy" initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduceMotion ? 0 : .55 }}>
+
+          {/* [ABOUT-07] Identity H2 Heading — "Who am I?"
+              Styles: styles.css → [ABOUT-07] (.identity-copy h2) */}
+          <h2 data-swarm="heading">Who am <span>I&nbsp;?&nbsp;</span></h2>
+
+          {/* [ABOUT-08] Identity Conversation Box — Animated Sequential Chat Lines
+              Animates height from 190px to auto on completion.
+              Styles: styles.css → [ABOUT-08] (.identity-conversation) */}
+          <motion.div
+            className="identity-conversation"
+            data-swarm="text"
+            ref={conversationRef}
+            aria-label="A personal introduction"
+            aria-live="polite"
+            initial={false}
+            animate={{ height: conversationComplete ? 'auto' : 190 }}
+            transition={{ height: { duration: reduceMotion ? 0 : .9, ease: 'easeInOut' } }}
+          >
+            <AnimatePresence initial={false} mode="popLayout">
+              {/* [ABOUT-09] Identity Conversation Lines — Animated Lead and Body Lines
+                  Classes: .identity-lead (larger), .identity-body (normal)
+                  Styles: styles.css → [ABOUT-09] (.identity-conversation-line, .identity-lead, .identity-body) */}
+              {conversationVisible && !conversationComplete && conversation.slice(Math.max(0, lineIndex - 1), lineIndex + 1).map((line, index) => {
+                const currentLineIndex = Math.max(0, lineIndex - 1) + index
+                return <motion.p
+                  className={`identity-conversation-line ${line.className}`}
+                  key={currentLineIndex}
+                  layout
+                  initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -32 }}
+                  transition={{ duration: reduceMotion ? 0 : .7, ease: 'easeInOut', layout: { duration: .7, ease: 'easeInOut' } }}
+                ><TypingText text={line.text} active={conversationVisible && !conversationComplete} speed={typingSpeed} reduceMotion={reduceMotion} /></motion.p>
+              })}
+
+              {/* [ABOUT-10] Identity Conversation Complete — Final Summary Paragraph
+                  Shown after all conversation lines finish.
+                  Styles: styles.css → [ABOUT-10] (.identity-conversation-complete) */}
+              {conversationComplete && <motion.p
+                className="identity-conversation-complete"
+                key="complete"
+                aria-label={finalSummaryLines.join(' ')}
+                initial={false}
+              >{finalSummaryLines.map((line, index) => <motion.span
+                // [ABOUT-11] Identity Summary Line — Individual Fade-In Spans
+                // Styles: styles.css → [ABOUT-11] (.identity-summary-line)
+                className="identity-summary-line"
+                key={line}
+                aria-hidden="true"
+                initial={reduceMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: reduceMotion ? 0 : .7, delay: reduceMotion ? 0 : index * .24, ease: 'easeInOut' }}
+              >{line} </motion.span>)}</motion.p>}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* [ABOUT-13] Identity Focus Section — Current Areas of Focus
+              Styles: styles.css → [ABOUT-13] (.identity-focus) */}
+          <div className="identity-focus" data-swarm="style">
+
+            {/* [ABOUT-12] Identity Skip Button — Skip Intro Animation
+                Only visible while conversation is in progress.
+                Styles: styles.css → [ABOUT-12] (.identity-skip) */}
+            {!conversationComplete && <motion.button
+              className="identity-skip"
+              type="button"
+              onClick={() => { setConversationVisible(true); setConversationComplete(true) }}
+              initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 1.5, delay: reduceMotion ? 0 : 3, ease: [0.22, 1, 0.36, 1] }}
+            >Skip intro <ArrowRight size={12} aria-hidden="true" /></motion.button>}
+
+            <span className="eyebrow">CURRENT AREAS OF FOCUS</span>
+
+            {/* [ABOUT-14] Identity Focus Chips — Technology Area Tags
+                Styles: styles.css → [ABOUT-14] (.identity-focus-chip) */}
+            <div>{focusGroups.map((group) => <span className="identity-focus-chip" key={group.name}><i aria-hidden="true" />{group.name}</span>)}</div>
+          </div>
+
+          {/* [ABOUT-15] Identity Location Badge — Location Label
+              Styles: styles.css → [ABOUT-15] (.identity-location, .location-dot) */}
+          <div className="identity-location" data-swarm="style"><span className="location-dot" />BENGALURU, KARNATAKA, INDIA</div>
+        </motion.div>
+      </div>
+    </section>
+  )
 }

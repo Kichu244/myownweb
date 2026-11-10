@@ -97,6 +97,7 @@ export class SwarmCoordinator {
   private activitySignature = ''
   private pointerPosition: SwarmPoint | null = null
   private pointerDirection: SwarmPoint = { x: 1, y: 0 }
+  private pointerVelocity: SwarmPoint = { x: 0, y: 0 }
 
   constructor(
     cursorElements: HTMLElement[],
@@ -190,6 +191,11 @@ export class SwarmCoordinator {
 
     window.addEventListener('resize', this.handleResize, { passive: true })
     window.addEventListener('pointermove', this.handlePointerMove, { passive: true })
+    window.addEventListener('pointerleave', this.handlePointerLeave)
+    window.addEventListener('pointercancel', this.handlePointerLeave)
+    window.addEventListener('touchstart', this.handleTouchMove, { passive: true })
+    window.addEventListener('touchmove', this.handleTouchMove, { passive: true })
+    window.addEventListener('touchend', this.handlePointerLeave, { passive: true })
 
     this.observer = new MutationObserver((records) => {
       if (!this.running || this.finished) return
@@ -222,6 +228,11 @@ export class SwarmCoordinator {
     this.scrollController.stop()
     window.removeEventListener('resize', this.handleResize)
     window.removeEventListener('pointermove', this.handlePointerMove)
+    window.removeEventListener('pointerleave', this.handlePointerLeave)
+    window.removeEventListener('pointercancel', this.handlePointerLeave)
+    window.removeEventListener('touchstart', this.handleTouchMove)
+    window.removeEventListener('touchmove', this.handleTouchMove)
+    window.removeEventListener('touchend', this.handlePointerLeave)
 
     const root = document.querySelector<HTMLElement>('#root')
     if (root) root.style.removeProperty('visibility')
@@ -1043,16 +1054,47 @@ export class SwarmCoordinator {
     if (event.pointerType !== 'mouse' || this.reducedMotion
       || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
     const previous = this.pointerPosition
+    const next = { x: event.clientX, y: event.clientY }
     if (previous) {
-      const dx = event.clientX - previous.x
-      const dy = event.clientY - previous.y
+      const dx = next.x - previous.x
+      const dy = next.y - previous.y
       const distance = Math.hypot(dx, dy)
-      if (distance > 1) this.pointerDirection = { x: dx / distance, y: dy / distance }
+      if (distance > 1) {
+        this.pointerDirection = { x: dx / distance, y: dy / distance }
+        this.pointerVelocity = { x: dx, y: dy }
+      }
+    } else {
+      this.pointerVelocity = { x: 0, y: 0 }
     }
-    this.pointerPosition = { x: event.clientX, y: event.clientY }
+    this.pointerPosition = next
     if (this.finished) {
       this.startFollowMode()
     }
+  }
+
+  private handleTouchMove = (event: TouchEvent) => {
+    if (this.reducedMotion || !event.touches.length) return
+    const touch = event.touches[0]
+    const previous = this.pointerPosition
+    const next = { x: touch.clientX, y: touch.clientY }
+    if (previous) {
+      const dx = next.x - previous.x
+      const dy = next.y - previous.y
+      const distance = Math.hypot(dx, dy)
+      if (distance > 1) {
+        this.pointerDirection = { x: dx / distance, y: dy / distance }
+        this.pointerVelocity = { x: dx, y: dy }
+      }
+    } else {
+      this.pointerVelocity = { x: 0, y: 0 }
+    }
+    this.pointerPosition = next
+  }
+
+  private handlePointerLeave = () => {
+    this.pointerPosition = null
+    this.pointerDirection = { x: 1, y: 0 }
+    this.pointerVelocity = { x: 0, y: 0 }
   }
 
   private handleResize = () => {
@@ -1347,17 +1389,19 @@ export class SwarmCoordinator {
     const perpendicular = { x: -this.pointerDirection.y, y: this.pointerDirection.x }
     const side = index % 2 === 0 ? 1 : -1
     const lane = Math.floor(index / 2) + 1
-    const trail = 15 + index * 3.2
-    const lateral = side * (4 + lane * 2.4)
+    const trail = 18 + index * 3.4
+    const lateral = side * (5 + lane * 2.8)
     const target = {
       x: this.pointerPosition.x - this.pointerDirection.x * trail + perpendicular.x * lateral,
       y: this.pointerPosition.y - this.pointerDirection.y * trail + perpendicular.y * lateral,
     }
-    const response = 95 + index * 15
-    const amount = 1 - Math.exp(-delta / response)
+    const response = 80 + index * 12
+    const smoothing = 1 - Math.exp(-delta / response)
+    const driftX = target.x - agent.position.x + this.pointerVelocity.x * 0.12
+    const driftY = target.y - agent.position.y + this.pointerVelocity.y * 0.12
     agent.position = {
-      x: agent.position.x + (target.x - agent.position.x) * amount,
-      y: agent.position.y + (target.y - agent.position.y) * amount,
+      x: agent.position.x + driftX * smoothing,
+      y: agent.position.y + driftY * smoothing,
     }
     this.placeCursor(agent)
   }
