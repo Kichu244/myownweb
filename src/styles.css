@@ -961,7 +961,7 @@ html:not([data-theme='dark']) .cinematic-card:hover .cinematic-project-title {
 }
 
 html:not([data-theme='dark']) .cinematic-project-desc {
-  color: #475569;
+  color: #48576b;
 }
 
 html:not([data-theme='dark']) .cinematic-preview-frame {
