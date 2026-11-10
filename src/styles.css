@@ -957,7 +957,7 @@ html:not([data-theme='dark']) .cinematic-project-title {
 }
 
 html:not([data-theme='dark']) .cinematic-card:hover .cinematic-project-title {
-  color: #2563EB;
+  color: #2967ec;
 }
 
 html:not([data-theme='dark']) .cinematic-project-desc {
