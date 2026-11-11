@@ -115,7 +115,7 @@ export default function ExperienceEducation({ homePage = false }: { homePage?: b
           transition={{ duration: reduceMotion ? 0 : 0.45 }}
         >
           <h2 data-swarm="heading">
-            My <span>Journey</span>
+            My <span>Journey&nbsp;</span>
           </h2>
           <p data-swarm="text">Professional experience, project work, and the education behind my path.</p>
         </motion.div>

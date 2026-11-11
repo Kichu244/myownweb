@@ -13,3 +13,10 @@ export function pageFromPath(path: string) {
       : path
   return appPath === '/' ? 'home' : appPath.replace(/^\/+|\/+$/g, '')
 }
+
+const sectionNames = new Set(['about', 'skills', 'projects', 'experience', 'contact'])
+
+export function sectionFromPath(path: string) {
+  const page = pageFromPath(path)
+  return sectionNames.has(page) ? page : null
+}

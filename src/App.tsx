@@ -11,7 +11,8 @@ import AboutIdentity from './components/AboutIdentity'
 import ExperienceEducation from './components/ExperienceEducation'
 import { ContactFooter, ContactSection } from './components/ContactExperience'
 import SwarmController from './components/swarm/SwarmController'
-import { pageFromPath, withBasePath } from './navigation'
+import WebsiteGuide from './components/WebsiteGuide'
+import { pageFromPath, sectionFromPath, withBasePath } from './navigation'
 
 const nav = [['About', 'about'], ['Skills', 'skills'], ['Projects', 'projects'], ['Experience', 'experience'], ['Contact', 'contact']]
 
@@ -49,7 +50,14 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
 
 
 function App() {
-  const [path, setPath] = useState(() => window.location.pathname)
+  const [path, setPath] = useState(() => {
+    const currentPath = window.location.pathname
+    const section = sectionFromPath(currentPath)
+    if (!section) return currentPath
+    const homePath = withBasePath('/')
+    window.history.replaceState({}, '', `${homePath}${window.location.search}${window.location.hash || `#${section}`}`)
+    return homePath
+  })
   const [theme, setTheme] = useState<'light' | 'dark'>(() => localStorage.getItem('portfolio-theme') === 'dark' ? 'dark' : 'light')
   const page = pageFromPath(path)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -142,7 +150,21 @@ function App() {
     return () => { document.body.style.overflow = '' }
   }, [selected, page])
   useEffect(() => {
-    const onPopState = () => setPath(window.location.pathname)
+    const hash = window.location.hash
+    if (!hash) return
+    const project = projects.find((item) => `#${item.id}` === hash)
+    if (project) { setSelected(project); return }
+    window.requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'instant', block: 'start' }))
+  }, [])
+  useEffect(() => {
+    const onPopState = () => {
+      const section = sectionFromPath(window.location.pathname)
+      if (section) {
+        const homePath = withBasePath('/')
+        window.history.replaceState({}, '', `${homePath}${window.location.search}${window.location.hash || `#${section}`}`)
+        setPath(homePath)
+      } else setPath(window.location.pathname)
+    }
     const onDocumentClick = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       const target = event.target
@@ -151,6 +173,22 @@ function App() {
       if (!(anchor instanceof HTMLAnchorElement) || anchor.target || anchor.hasAttribute('download')) return
       const destination = new URL(anchor.href, window.location.href)
       if (destination.origin !== window.location.origin || destination.pathname === window.location.pathname && destination.hash) return
+      const destinationSection = sectionFromPath(destination.pathname)
+      if (destinationSection) {
+        event.preventDefault()
+        const homePath = withBasePath('/')
+        const hash = destination.hash || `#${destinationSection}`
+        window.history.pushState({}, '', `${homePath}${destination.search}${hash}`)
+        setPath(homePath)
+        setMenuOpen(false)
+        setSelected(null)
+        window.requestAnimationFrame(() => {
+          const project = projects.find((item) => `#${item.id}` === hash)
+          if (project) setSelected(project)
+          else document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: reduceMotion ? 'instant' : 'smooth', block: 'start' })
+        })
+        return
+      }
       event.preventDefault()
       if (destination.pathname === window.location.pathname) return
       window.history.pushState({}, '', `${destination.pathname}${destination.search}${destination.hash}`)
@@ -190,10 +228,14 @@ function App() {
     return () => window.removeEventListener('scroll', updateScrollState)
   }, [])
   useEffect(() => {
-    if (page !== 'projects' || !window.location.hash) return
-    const project = projects.find((item) => `#${item.id}` === window.location.hash)
-    if (project) setSelected(project)
-  }, [page])
+    const selectProjectFromHash = () => {
+      const project = projects.find((item) => `#${item.id}` === window.location.hash)
+      if (project) setSelected(project)
+    }
+    selectProjectFromHash()
+    window.addEventListener('hashchange', selectProjectFromHash)
+    return () => window.removeEventListener('hashchange', selectProjectFromHash)
+  }, [])
   useEffect(() => {
     if (!menuOpen) return
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setMenuOpen(false); menuToggleRef.current?.focus() } }
@@ -522,6 +564,7 @@ function App() {
     {isHome && <ContactFooter homePage />}
     {!isHome && <ContactFooter />}
     <AnimatePresence>{selected && <ProjectExplorer project={selected} dialogRef={dialogRef} closeRef={dialogCloseRef} onClose={() => setSelected(null)} reduceMotion={reduceMotion} />}</AnimatePresence>
+    <WebsiteGuide path={page === 'home' ? '/' : `/${page}`} />
   </>
 }
 

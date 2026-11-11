@@ -205,6 +205,16 @@ myownweb/
 
 This portfolio is designed as a modern, interactive story around my work: introduction, skills, projects, and experience. It uses motion, layered visuals, and a clean interface to present technical work in a more expressive and professional way.
 
+## Website guide
+
+The floating character launcher opens a local, rule-based guide in `src/components/WebsiteGuide.tsx`. It keeps messages in component state only; there is no chat endpoint, model call, lead capture, or conversation persistence. Its typed catalogue and Unicode-aware phrase matcher live in `src/chatbotIntents.ts`. Topics are limited to facts already shown in `src/data.ts` and the portfolio sections: greetings, guide identity/help, about, Autochip role, projects, skills, experience, education, pricing availability, careers, contact, and section navigation. Unknown input gets a fallback; very short or consonant-only input gets a clarification.
+
+To add an intent, add a unique `id`, category, priority, and reply to `intents`. Use `patterns` for complete direct questions or `keywordGroups` when each group must have at least one complete phrase match. Add only facts verified in the portfolio data. `link` and optional `tour` point to existing routes/headings; keep the page route and heading text in sync. Follow-up pricing after projects is deliberately explicit and guarded by the current project topic ID.
+
+Guided navigation uses the app's existing history/popstate path handling, retries headings while pages render, and draws a pointer-transparent spotlight. The guide remains open across route changes. Tours are best-effort: missing headings cancel the tour, and there is no server-side search or dynamic content knowledge.
+
+The companion state and deterministic reactions live in `src/components/useCompanion.ts`; pointer physics, bounded gesture trajectories, and content collision checks live in `src/components/GuideSprite.tsx`; character and accessory layers are rendered by `src/components/GuideSpriteArt.tsx`. Section appearances are mapped from existing portfolio sections. Glasses are positioned against the bot's 45 px face, with each SVG's artwork bounds accounted for; the supplied wide-in-square artwork is rendered at face scale so it does not shrink into a floating icon. Drag velocity is smoothed and classified at 260, 720, 1,150, and 1,750 px/s, with hysteresis. Circular gestures accumulate consistent angular movement and advance through surprised, dizzy, and annoyed reactions; rapid reversals trigger a separate staged shake reaction. Speed, spin, shake, and collision responses have explicit priority, and new drags cancel stale recovery timers. The base section palette and accessories stay separate from expressions and temporary reactions. To add an emotion or reaction, extend `BotEmotion` / `CompanionEvent`, add a rule in `reactionFor`, then style its `is-<emotion>` state in `src/styles.css`. Activity and conversation remain local; no model call or persistence is used. Motion effects respect reduced-motion settings.
+
 ---
 
 <p align="center">
