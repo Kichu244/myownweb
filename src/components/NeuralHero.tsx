@@ -191,10 +191,6 @@ export default function NeuralHero({ name, role, homePage = false }: NeuralHeroP
               onLoad={() => setPhotoLoaded(true)}
               onError={() => setPhotoUnavailable(true)}
             />}
-
-            {/* [HERO-15] Portrait Placeholder — Fallback When Image Is Missing
-                Styles: styles.css → [HERO-15] (.portrait-placeholder, .portrait-placeholder-index,
-                .portrait-placeholder-mark, .portrait-placeholder-path) */}
             {!photoLoaded && <div className="portrait-placeholder">
               <span className="portrait-placeholder-index">PERSONAL IMAGE / 01</span>
               <span className="portrait-placeholder-mark" aria-hidden="true">NO</span>

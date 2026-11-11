@@ -270,16 +270,72 @@ export class DOMSnapshotEngine {
 
   /**
    * Determines if a DOM element is eligible for inspection.
+   * IMPORTANT: We NEVER exclude elements based on the presence of CSS animations,
+   * transitions, Framer Motion, hover effects, transforms, or opacity changes.
+   * We only exclude Swarm UI chrome and explicitly marked elements.
    */
   private isInspectable(element: HTMLElement): boolean {
+    // Exclude Swarm Studio's own UI controls
     if (element.closest('.swarm-activate, .swarm-studio, .swarm-loader, .theme-toggle, .menu-toggle, .auto-scroll-toggle')) {
       return false
     }
+    // Respect explicit opt-out
     if (element.hasAttribute('data-swarm-exempt') || element.closest('[data-swarm-exempt]')) {
       return false
     }
+    // Skip closed dialogs (no visible content)
     if (element.tagName === 'DIALOG' && !(element as HTMLDialogElement).open) {
       return false
+    }
+    // Skip aria-hidden purely decorative subtrees (particles, canvas backdrops)
+    if (element.hasAttribute('aria-hidden')) {
+      const tag = element.tagName
+      // Allow aria-hidden elements that contain real visual constructs (icons, images)
+      if (tag !== 'svg' && !element.querySelector('img, svg')) {
+        const cls = element.className || ''
+        // Skip particle/atmosphere/grid decorations
+        if (
+          cls.includes('particles') ||
+          cls.includes('atmosphere') ||
+          cls.includes('hero-grid') ||
+          cls.includes('hero-circuit') ||
+          cls.includes('hero-particles') ||
+          cls.includes('circuit-') ||
+          cls.includes('-orbit') ||
+          cls.includes('-node')
+        ) {
+          return false
+        }
+      }
+    }
+    return true
+  }
+
+  /**
+   * Checks whether an element's visual content is reachable despite animations.
+   * Framer Motion elements start at opacity:0, so we look through transform/opacity
+   * to determine whether the element has actual visual content to construct.
+   * Never exclude based on animation presence alone.
+   */
+  private hasConstructibleContent(element: HTMLElement): boolean {
+    // Always include explicit data-swarm marked elements regardless of opacity
+    if (element.dataset.swarm) return true
+
+    // Elements with zero layout box and no forced size attribute can be skipped
+    const rect = element.getBoundingClientRect()
+    if (rect.width < 1 && rect.height < 1) {
+      // Check inline dimensions or min-height that keep layout space
+      const style = element.style
+      if (!style.minHeight && !style.height && !style.width) {
+        // Could be a Framer Motion element mid-animation; check CSS
+        try {
+          const comp = window.getComputedStyle(element)
+          const hasMinHeight = comp.minHeight !== '0px' && comp.minHeight !== 'auto'
+          if (!hasMinHeight) return false
+        } catch {
+          return false
+        }
+      }
     }
     return true
   }
@@ -476,41 +532,45 @@ export class DOMSnapshotEngine {
 
   /**
    * Evaluates the readiness state of an element before construction.
+   *
+   * CRITICAL: We NEVER exclude elements because:
+   * - Their opacity is 0 (Framer Motion entrance animations start at opacity:0)
+   * - They have CSS transitions or animations
+   * - They have CSS transforms
+   * - They contain hover effects
+   *
+   * We wait for entrance animations to settle, then capture the resting appearance.
+   * Framer Motion elements are always treated as CONSTRUCTIBLE once they have bounds.
    */
-  evaluateReadiness(element: Element, registeredAt = performance.now()): 'ready' | 'waiting_render' | 'temporarily_interactive' {
+  evaluateReadiness(element: Element, _registeredAt = performance.now()): 'ready' | 'waiting_render' | 'temporarily_interactive' {
+    // Already marked as built
     if (element.getAttribute('data-swarm-built') === 'true') {
       return 'ready'
     }
 
+    // Currently in a temporary hover/focus interaction state — do not capture
     if (element.matches?.(':hover, :active')) {
       return 'temporarily_interactive'
     }
 
+    // Images: wait until the image asset has loaded
     if (element instanceof HTMLImageElement) {
       if (!element.complete || element.naturalWidth === 0) {
         return 'waiting_render'
       }
     }
 
+    // Check layout bounds — but be lenient with Framer Motion elements which may
+    // start with opacity:0 and transform:translateY(N) but DO have layout dimensions.
     const rect = element.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) {
-      if (performance.now() - registeredAt < 350) {
-        return 'waiting_render'
-      }
-      return 'ready'
+      // No visible layout space at all — genuinely not renderable yet
+      return 'waiting_render'
     }
 
-    try {
-      const comp = window.getComputedStyle(element)
-      if (comp.opacity === '0' && !element.hasAttribute('data-swarm-building')) {
-        if (performance.now() - registeredAt < 400) {
-          return 'waiting_render'
-        }
-      }
-    } catch {
-      // safe fallback
-    }
-
+    // Element has layout space — it is READY regardless of its current opacity,
+    // transform, or animation state. We will capture its resting text/properties
+    // from aria-label and computed styles which reflect the final values.
     return 'ready'
   }
 
