@@ -317,28 +317,28 @@ export class DOMSnapshotEngine {
    * to determine whether the element has actual visual content to construct.
    * Never exclude based on animation presence alone.
    */
-  private hasConstructibleContent(element: HTMLElement): boolean {
-    // Always include explicit data-swarm marked elements regardless of opacity
-    if (element.dataset.swarm) return true
+  // private hasConstructibleContent(element: HTMLElement): boolean {
+  //   // Always include explicit data-swarm marked elements regardless of opacity
+  //   if (element.dataset.swarm) return true
 
-    // Elements with zero layout box and no forced size attribute can be skipped
-    const rect = element.getBoundingClientRect()
-    if (rect.width < 1 && rect.height < 1) {
-      // Check inline dimensions or min-height that keep layout space
-      const style = element.style
-      if (!style.minHeight && !style.height && !style.width) {
-        // Could be a Framer Motion element mid-animation; check CSS
-        try {
-          const comp = window.getComputedStyle(element)
-          const hasMinHeight = comp.minHeight !== '0px' && comp.minHeight !== 'auto'
-          if (!hasMinHeight) return false
-        } catch {
-          return false
-        }
-      }
-    }
-    return true
-  }
+  //   // Elements with zero layout box and no forced size attribute can be skipped
+  //   const rect = element.getBoundingClientRect()
+  //   if (rect.width < 1 && rect.height < 1) {
+  //     // Check inline dimensions or min-height that keep layout space
+  //     const style = element.style
+  //     if (!style.minHeight && !style.height && !style.width) {
+  //       // Could be a Framer Motion element mid-animation; check CSS
+  //       try {
+  //         const comp = window.getComputedStyle(element)
+  //         const hasMinHeight = comp.minHeight !== '0px' && comp.minHeight !== 'auto'
+  //         if (!hasMinHeight) return false
+  //       } catch {
+  //         return false
+  //       }
+  //     }
+  //   }
+  //   return true
+  // }
 
   /**
    * Identifies the visual element type of a DOM element.
