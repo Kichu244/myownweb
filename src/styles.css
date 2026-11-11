@@ -3576,8 +3576,10 @@ html:not([data-theme='dark']) .hero::after {
 .guide-panel.is-opening { animation: guide-panel-enter .4s cubic-bezier(.22, 1, .36, 1) both; }.guide-panel.is-closing { animation: guide-panel-exit .3s ease-in both; }.guide-panel.is-flight .guide-avatar { opacity: 0; }.guide-avatar { transition: opacity .18s ease; }
 .guide-flight { position: fixed; z-index: 145; display: grid; width: 54px; height: 54px; place-items: center; pointer-events: none; transform-origin: center; }.guide-flight.is-moving { transition: transform .66s cubic-bezier(.2,.8,.22,1); }
 @keyframes guide-panel-enter { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }@keyframes guide-panel-exit { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(12px) scale(.985); } }
-@keyframes guide-siri-glow { 0%, 100% { transform: translateY(0) scale(.99); filter: drop-shadow(0 0 3px rgba(54, 196, 255, .48)) drop-shadow(0 0 7px rgba(116, 85, 255, .2)); } 50% { transform: translateY(-1px) scale(1.025); filter: drop-shadow(0 0 8px rgba(59, 218, 255, .78)) drop-shadow(0 0 16px rgba(145, 79, 255, .5)); } }
-@keyframes guide-siri-core { 0%, 100% { box-shadow: inset -2px -3px 5px rgba(4,15,74,.5), 0 0 7px rgba(43,169,255,.34), 0 0 12px rgba(90,81,255,.16); } 50% { box-shadow: inset -2px -3px 5px rgba(4,15,74,.4), 0 0 11px rgba(57,225,255,.7), 0 0 20px rgba(158,89,255,.46); } }
+@keyframes guide-siri-glow { 0%, 100% { transform: translateY(0) scale(.99); filter: drop-shadow(0 0 2px rgba(54, 196, 255, .3)) drop-shadow(0 0 4px rgba(116, 85, 255, .12)); } 50% { transform: translateY(-1px) scale(1.025); filter: drop-shadow(0 0 5px rgba(59, 218, 255, .48)) drop-shadow(0 0 9px rgba(145, 79, 255, .28)); } }
+@keyframes guide-siri-core { 0%, 100% { box-shadow: inset -4px -7px 12px rgba(4,15,74,.42), inset 2px 2px 8px rgba(174,244,255,.18), 0 0 7px rgba(43,169,255,.24); } 50% { box-shadow: inset -4px -7px 12px rgba(4,15,74,.36), inset 2px 2px 8px rgba(174,244,255,.24), 0 0 11px rgba(57,225,255,.42); } }
+@keyframes guide-orb-aura-spin { to { rotate: 360deg; scale: 1.06; } }
+@keyframes guide-orb-sheen { from { transform: translate(-2px, -1px) rotate(-12deg) scale(1.03, .96); opacity: .7; } to { transform: translate(2px, 1px) rotate(12deg) scale(.96, 1.04); opacity: 1; } }
 .guide-sprite-speech { position: absolute; top: 50%; width: max-content; box-sizing: border-box; padding: 8px 11px; border: 1px solid rgba(128, 171, 255, .38); border-radius: 14px; color: var(--text); background: color-mix(in srgb, var(--bg) 94%, #687aff); box-shadow: 0 8px 24px rgba(9, 23, 62, .2); font: 600 11px var(--sans); text-align: center; white-space: normal; pointer-events: none; transform: translateY(-50%); }
 .guide-sprite-speech.is-left { right: calc(100% + 12px); left: auto; border-radius: 14px 14px 4px 14px; animation: guide-speech-in-left .28s ease-in-out both; }.guide-sprite-speech.is-right { right: auto; left: calc(100% + 12px); border-radius: 14px 14px 14px 4px; animation: guide-speech-in-right .28s ease-in-out both; }
 .guide-sprite-mouth { position: absolute; bottom: 7px; left: 50%; display: block; width: 7px; height: 4px; border-bottom: 1.5px solid #080c18; border-radius: 0 0 50% 50%; transform: translateX(-50%); transition: all .14s ease; }
@@ -3652,10 +3654,16 @@ html:not([data-theme='dark']) .hero::after {
   .guide-sprite-float, .guide-sprite-body, .guide-sprite-eye, .guide-sprite-mouth, .guide-sprite-speech { animation: none !important; transition-duration: .01ms !important; }
 }
 .guide-sprite-body {
-  background: radial-gradient(circle at 36% 24%, color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 66%, #8bd9ff), color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 72%, #07184f) 72%);
-  box-shadow: inset -3px -5px 9px rgba(4, 15, 74, .36), 0 0 22px color-mix(in srgb, var(--sprite-reaction, #2268ed) 62%, transparent);
+  isolation: isolate;
+  overflow: visible;
+  background: radial-gradient(ellipse at 30% 17%, rgba(180, 250, 255, .72), transparent 25%), radial-gradient(circle at 34% 26%, color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 76%, #72dfff), color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 88%, #07184f) 75%);
+  box-shadow: inset -4px -7px 12px rgba(4, 15, 74, .42), inset 2px 2px 8px rgba(174, 244, 255, .18), 0 0 8px rgba(38, 153, 255, .25);
   transition: background .42s ease-in-out, box-shadow .42s ease-in-out, rotate .3s ease-in-out;
 }
+.guide-sprite-body::before,
+.guide-sprite-body::after { position: absolute; inset: 0; display: block; border-radius: 50%; content: ''; pointer-events: none; }
+.guide-sprite-body::before { z-index: -1; inset: -7px; background: conic-gradient(from 10deg, #24e9ff, #386aff, #9b55ff, #f44cb5, #475cff, #24e9ff); filter: blur(7px); opacity: .4; animation: guide-orb-aura-spin 8s linear infinite; }
+.guide-sprite-body::after { z-index: 1; inset: 1px; border: 1px solid rgba(147, 240, 255, .48); background: radial-gradient(ellipse at 28% 18%, rgba(223, 255, 255, .52), transparent 24%), radial-gradient(ellipse at 76% 78%, rgba(54, 105, 255, .24), transparent 52%); box-shadow: inset 1px 2px 5px rgba(208, 252, 255, .2); mix-blend-mode: screen; animation: guide-orb-sheen 4.8s ease-in-out infinite alternate; }
 .guide-sprite-float { position: relative; }
 .guide-sprite-capsule { overflow: visible; }
 .guide-sprite-body { z-index: 2; }
@@ -3695,6 +3703,7 @@ html:not([data-theme='dark']) .hero::after {
 @keyframes guide-settle-bounce { 0% { translate: 0 -2px; } 40% { translate: 0 2px; } 72% { translate: 0 -1px; } 100% { translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) {
   .guide-sprite-accessory, .guide-sprite-suit, .guide-sprite-body { transition: none !important; }
+  .guide-sprite-body::before, .guide-sprite-body::after { animation: none !important; }
   .guide-sprite-launcher.is-dragging { rotate: 0deg; }
   .guide-sprite-launcher { transition: none !important; }
 }
