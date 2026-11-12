@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { assetForEmotion, baseCharacterForSection, type CompanionAssetId } from './companionAssets'
 
 export type BotEmotion = 'idle' | 'happy' | 'excited' | 'curious' | 'thinking' | 'surprised' | 'sad' | 'sleepy' | 'playful' | 'confident' | 'annoyed' | 'dizzy' | 'extremely-dizzy' | 'listening' | 'speaking' | 'relaxed'
 export type BotSection = 'hero' | 'overview' | 'about' | 'projects' | 'skills' | 'experience' | 'education' | 'contact' | 'footer'
@@ -6,7 +7,7 @@ export type BotAccessory = 'professional-glasses' | 'experience-glasses' | 'proj
 export type CollisionCategory = 'content' | 'interactive' | 'visual'
 
 export type CompanionEvent =
-  | { type: 'welcome' | 'approach' | 'chat-open' | 'chat-close' | 'typing' | 'thinking' | 'idle' }
+  | { type: 'welcome' | 'approach' | 'chat-open' | 'chat-close' | 'typing' | 'thinking' | 'idle' | 'surprise-reminder' | 'pin-reminder' }
   | { type: 'click'; count: number }
   | { type: 'background-click'; section?: string }
   | { type: 'section'; section: BotSection }
@@ -30,6 +31,7 @@ export type CompanionState = {
   reactionPriority: number
   reactionColor: string | null
   reactionKind: 'speed' | 'spin' | 'shake' | 'collision' | null
+  characterAsset: CompanionAssetId
   id: number
 }
 
@@ -79,6 +81,8 @@ function reactionFor(event: CompanionEvent): Reaction | null {
       ? { emotion: 'annoyed', message: 'Again? Again?!', priority: 4, duration: 1800, color: '#ef704d' }
       : { emotion: 'happy', message: event.count === 2 ? 'You called again!' : 'You called?', priority: 3, duration: 2000, color: '#bb68dc' }
     case 'chat-open': return { emotion: 'excited', message: "Hey! Let's talk!", priority: 5, duration: 2400, color: '#27c3d7' }
+    case 'surprise-reminder': return { emotion: 'playful', message: 'Need Some Surprise! Click On the gear icon ⚙️!', priority: 8, duration: 4200, color: '#bb68dc' }
+    case 'pin-reminder': return { emotion: 'happy', message: 'Hey!! Remember the PIN is 2224.', priority: 8, duration: 4200, color: '#27c3d7' }
     case 'chat-close': return { emotion: 'relaxed', message: '', priority: 1, duration: 800 }
     case 'typing': return { emotion: 'listening', message: "I'm listening!", priority: 5, duration: 2200, color: '#20b9ba' }
     case 'thinking': return { emotion: 'thinking', message: 'Hmm... Let me think.', priority: 6, duration: 8000, color: '#3153b9' }
@@ -117,9 +121,59 @@ function reactionFor(event: CompanionEvent): Reaction | null {
   }
 }
 
+function characterForEvent(event: CompanionEvent, emotion: BotEmotion, section: BotSection, returningAfterIdle = false): CompanionAssetId {
+  if (returningAfterIdle) return 'excited'
+  switch (event.type) {
+    case 'welcome': case 'chat-open': return 'excited'
+    case 'surprise-reminder': return 'cool'
+    case 'pin-reminder': return 'thumbs-up'
+    case 'chat-close': case 'collision-exit': return baseCharacterForSection(section)
+    case 'approach': case 'background-click': return 'curious'
+    case 'click': return event.count >= 3 ? 'angry' : 'happy'
+    case 'typing': return 'typing'
+    case 'thinking': return 'thinking-pose'
+    case 'idle': return 'sleepy'
+    case 'section': return baseCharacterForSection(event.section)
+    case 'reply': {
+      const text = event.userText.toLowerCase()
+      if (/\b(completed|finished|finally done|i did it|i made it|my project|congrat)/.test(text)) return 'victory'
+      if (/\b(love you|i love|you are awesome|you're awesome|you are great|you're great)/.test(text)) return 'lovely'
+      if (/\b(cute|adorable|sweet|handsome)/.test(text)) return 'shy'
+      if (/\b(thanks|thank you|appreciate)/.test(text)) return 'thumbs-up'
+      if (/\b(compliment|blush|embarrassed|flattered)/.test(text)) return 'blush'
+      if (/\b(stuck|struggling|frustrated|difficult|confused|unclear)/.test(text)) return 'confused'
+      if (/\b(call|phone|contact)/.test(text)) return 'calling'
+      if (/\b(project|work|cool)/.test(text)) return 'cool'
+      if (/\b(education|graduate|degree|school)/.test(text)) return 'graduated'
+      if (/\b(skill|study|learn|technology)/.test(text)) return 'topper'
+      return assetForEmotion(emotion)
+    }
+    case 'drag-start': return 'surprised'
+    case 'drag-tier':
+      if (event.tier === 'slow') return 'curious'
+      if (event.tier === 'normal') return 'happy'
+      if (event.tier === 'fast') return 'surprised'
+      return 'dizzy'
+    case 'spin-stage': return event.stage >= 3 ? 'angry' : event.stage === 2 ? 'dizzy' : 'surprised'
+    case 'shake-stage': return event.stage >= 3 ? 'angry' : event.stage === 2 ? 'dizzy' : 'surprised'
+    case 'collision': return 'annoyed'
+    case 'drag-release':
+      if (event.collided) return 'annoyed'
+      if (event.gesture || event.tier === 'very-fast' || event.tier === 'extreme') return 'dizzy'
+      return event.tier === 'fast' ? 'surprised' : 'neutral'
+  }
+}
+
+function restingCharacter(section: BotSection, conversation: CompanionState['conversation']): CompanionAssetId {
+  if (conversation === 'thinking') return 'thinking-pose'
+  if (conversation === 'listening') return 'typing'
+  if (conversation === 'speaking') return 'happy'
+  return baseCharacterForSection(section)
+}
+
 const initialState: CompanionState = {
   section: 'hero', accessories: [], baseEmotion: 'happy', baseColor: sectionAppearance.hero.color,
-  conversation: 'idle', emotion: 'happy', message: '', priority: 0, reactionPriority: 0, reactionColor: null, reactionKind: null, id: 0,
+  conversation: 'idle', emotion: 'happy', message: '', priority: 0, reactionPriority: 0, reactionColor: null, reactionKind: null, characterAsset: 'default', id: 0,
 }
 
 export function useCompanion(isChatOpen: boolean) {
@@ -156,7 +210,8 @@ export function useCompanion(isChatOpen: boolean) {
 
     if (event.type === 'section') {
       const appearance = sectionAppearance[event.section]
-      const next: CompanionState = { ...current, section: event.section, accessories: appearance.accessories, baseEmotion: appearance.emotion, baseColor: appearance.color, emotion: Math.max(current.priority, current.reactionPriority) > 2 ? current.emotion : appearance.emotion, id: ++eventId.current }
+      const hasActiveReaction = Math.max(current.priority, current.reactionPriority) > 2
+      const next: CompanionState = { ...current, section: event.section, accessories: appearance.accessories, baseEmotion: appearance.emotion, baseColor: appearance.color, emotion: hasActiveReaction ? current.emotion : appearance.emotion, characterAsset: hasActiveReaction ? current.characterAsset : baseCharacterForSection(event.section), id: ++eventId.current }
       const mayQueueSectionMessage = !isChatOpenRef.current && !dragActive.current && current.priority <= 2 && current.reactionPriority <= 2
       if (sectionTimer.current !== null) window.clearTimeout(sectionTimer.current)
       sectionToken.current++
@@ -176,14 +231,14 @@ export function useCompanion(isChatOpen: boolean) {
           if (sectionToken.current !== sectionMessageToken || latest.section !== event.section || isChatOpenRef.current || dragActive.current || latest.reactionPriority > 2 || latest.priority > 2) return
           const reaction = reactionFor(event)
           if (!reaction) return
-          commit({ ...latest, emotion: reaction.emotion, message: reaction.message, priority: 2, reactionPriority: 0, reactionColor: null, id: ++eventId.current })
+          commit({ ...latest, emotion: reaction.emotion, characterAsset: baseCharacterForSection(event.section), message: reaction.message, priority: 2, reactionPriority: 0, reactionColor: null, id: ++eventId.current })
           currentMessagePriority.current = 2
           const messageId = ++messageToken.current
           messageTimer.current = window.setTimeout(() => {
             const active = stateRef.current
             if (messageToken.current !== messageId) return
             currentMessagePriority.current = 0
-            commit({ ...active, message: '', priority: 0, reactionPriority: 0, emotion: active.conversation === 'idle' ? active.baseEmotion : active.conversation, id: ++eventId.current })
+            commit({ ...active, message: '', priority: 0, reactionPriority: 0, emotion: active.conversation === 'idle' ? active.baseEmotion : active.conversation, characterAsset: restingCharacter(active.section, active.conversation), id: ++eventId.current })
             messageTimer.current = null
           }, 2600)
           sectionTimer.current = null
@@ -202,7 +257,7 @@ export function useCompanion(isChatOpen: boolean) {
         messageToken.current++
         currentMessagePriority.current = 0
         const emotion: BotEmotion = event.tier === 'extreme' || event.tier === 'very-fast' ? 'dizzy' : event.tier === 'fast' ? 'surprised' : event.tier === 'normal' ? 'playful' : event.tier === 'slow' ? 'curious' : current.baseEmotion
-        commit({ ...current, message: '', priority: 0, reactionPriority: event.tier ? 8 : 0, reactionKind: event.tier ? 'speed' : null, emotion, reactionColor: null, id: ++eventId.current })
+        commit({ ...current, message: '', priority: 0, reactionPriority: event.tier ? 8 : 0, reactionKind: event.tier ? 'speed' : null, emotion, characterAsset: assetForEmotion(emotion), reactionColor: null, id: ++eventId.current })
       }
       return
     }
@@ -212,7 +267,7 @@ export function useCompanion(isChatOpen: boolean) {
       messageToken.current++
       currentMessagePriority.current = 0
       const preserveReaction = current.reactionPriority >= 8
-      commit({ ...current, conversation: 'idle', message: '', priority: 0, emotion: preserveReaction ? current.emotion : current.baseEmotion, reactionPriority: preserveReaction ? current.reactionPriority : 0, reactionColor: preserveReaction ? current.reactionColor : null, reactionKind: preserveReaction ? current.reactionKind : null, id: ++eventId.current })
+      commit({ ...current, conversation: 'idle', message: '', priority: 0, emotion: preserveReaction ? current.emotion : current.baseEmotion, characterAsset: preserveReaction ? current.characterAsset : baseCharacterForSection(current.section), reactionPriority: preserveReaction ? current.reactionPriority : 0, reactionColor: preserveReaction ? current.reactionColor : null, reactionKind: preserveReaction ? current.reactionKind : null, id: ++eventId.current })
       return
     }
 
@@ -230,19 +285,19 @@ export function useCompanion(isChatOpen: boolean) {
     if (reaction.priority < Math.max(currentMessagePriority.current, current.reactionPriority) && event.type !== 'drag-release' && !changingDragSpeed) {
       if (event.type === 'typing') {
         if (speakingTimer.current !== null) window.clearTimeout(speakingTimer.current)
-        commit({ ...current, conversation: 'listening' })
+        commit({ ...current, conversation: 'listening', characterAsset: 'typing' })
       }
       if (event.type === 'thinking') {
         if (speakingTimer.current !== null) window.clearTimeout(speakingTimer.current)
-        commit({ ...stateRef.current, conversation: 'thinking' })
+        commit({ ...stateRef.current, conversation: 'thinking', characterAsset: 'thinking-pose' })
       }
       if (event.type === 'reply') {
-        commit({ ...current, conversation: 'speaking' })
+        commit({ ...current, conversation: 'speaking', characterAsset: characterForEvent(event, current.emotion, current.section) })
         if (speakingTimer.current !== null) window.clearTimeout(speakingTimer.current)
         speakingTimer.current = window.setTimeout(() => {
           const latest = stateRef.current
           if (latest.conversation !== 'speaking') return
-          commit({ ...latest, conversation: 'idle', emotion: latest.reactionPriority > 2 ? latest.emotion : latest.baseEmotion, id: ++eventId.current })
+          commit({ ...latest, conversation: 'idle', emotion: latest.reactionPriority > 2 ? latest.emotion : latest.baseEmotion, characterAsset: latest.reactionPriority > 2 ? latest.characterAsset : baseCharacterForSection(latest.section), id: ++eventId.current })
           speakingTimer.current = null
         }, reaction.duration)
       }
@@ -261,6 +316,7 @@ export function useCompanion(isChatOpen: boolean) {
       priority: reaction.priority,
       reactionPriority: reaction.priority,
       reactionColor: reaction.color ?? null,
+      characterAsset: characterForEvent(event, reaction.emotion, current.section, returningAfterIdle),
       reactionKind: event.type === 'spin-stage' || event.type === 'drag-release' && event.gesture === 'spin' ? 'spin'
         : event.type === 'shake-stage' || event.type === 'drag-release' && event.gesture === 'shake' ? 'shake'
           : event.type === 'collision' || event.type === 'drag-release' && event.collided ? 'collision'
@@ -284,7 +340,7 @@ export function useCompanion(isChatOpen: boolean) {
         currentMessagePriority.current = 0
         const keepPhysical = (physical && (dragActive.current || event.type === 'drag-release'))
         const conversation = latest.conversation === 'speaking' || latest.conversation === 'listening' ? 'idle' : latest.conversation
-        commit({ ...latest, conversation, message: '', priority: 0, reactionPriority: keepPhysical ? latest.reactionPriority : 0, reactionKind: keepPhysical ? latest.reactionKind : null, emotion: keepPhysical ? latest.emotion : conversation === 'idle' ? latest.baseEmotion : conversation, id: ++eventId.current })
+        commit({ ...latest, conversation, message: '', priority: 0, reactionPriority: keepPhysical ? latest.reactionPriority : 0, reactionKind: keepPhysical ? latest.reactionKind : null, emotion: keepPhysical ? latest.emotion : conversation === 'idle' ? latest.baseEmotion : conversation, characterAsset: keepPhysical ? latest.characterAsset : restingCharacter(latest.section, conversation), id: ++eventId.current })
         messageTimer.current = null
       }, reaction.duration)
     }
@@ -295,7 +351,7 @@ export function useCompanion(isChatOpen: boolean) {
       if (event.type === 'drag-release') {
         reactionTimer.current = window.setTimeout(() => {
           const latest = stateRef.current
-          commit({ ...latest, emotion: latest.conversation === 'idle' ? latest.baseEmotion : latest.conversation, reactionPriority: 0, reactionColor: null, reactionKind: null, id: ++eventId.current })
+          commit({ ...latest, emotion: latest.conversation === 'idle' ? latest.baseEmotion : latest.conversation, characterAsset: restingCharacter(latest.section, latest.conversation), reactionPriority: 0, reactionColor: null, reactionKind: null, id: ++eventId.current })
           reactionTimer.current = null
         }, 3000)
       }

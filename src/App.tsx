@@ -68,6 +68,7 @@ function App() {
   const [autoScrollFading, setAutoScrollFading] = useState(false)
   const [autoScrollVisible, setAutoScrollVisible] = useState(true)
   const [selected, setSelected] = useState<Project | null>(null)
+  const [swarmCursorEnabled, setSwarmCursorEnabled] = useState(false)
   const menuToggleRef = useRef<HTMLButtonElement>(null)
   const autoScrollFrameRef = useRef<number | null>(null)
   const autoScrollModeRef = useRef(autoScrollMode)
@@ -527,7 +528,7 @@ function App() {
         </a>
         })}</div>
         <div className="nav-actions">
-          <SwarmController />
+          <SwarmController enabled={swarmCursorEnabled} />
           <button className="theme-toggle" type="button" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} aria-pressed={theme === 'dark'} onClick={toggleTheme}>
             {theme === 'light' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
           </button>
@@ -564,7 +565,7 @@ function App() {
     {isHome && <ContactFooter homePage />}
     {!isHome && <ContactFooter />}
     <AnimatePresence>{selected && <ProjectExplorer project={selected} dialogRef={dialogRef} closeRef={dialogCloseRef} onClose={() => setSelected(null)} reduceMotion={reduceMotion} />}</AnimatePresence>
-    <WebsiteGuide path={page === 'home' ? '/' : `/${page}`} />
+    <WebsiteGuide path={page === 'home' ? '/' : `/${page}`} onSwarmCursorEnabledChange={setSwarmCursorEnabled} />
   </>
 }
 

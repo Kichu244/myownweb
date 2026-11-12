@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import GuideSpriteArt from './GuideSpriteArt'
-import type { BotAccessory, BotEmotion, BotSection, CollisionCategory, CompanionEvent } from './useCompanion'
+import type { BotEmotion, BotSection, CollisionCategory, CompanionEvent } from './useCompanion'
+import type { CompanionAssetId } from './companionAssets'
 
 type Point = { x: number; y: number }
 type DragTier = 'slow' | 'normal' | 'fast' | 'very-fast' | 'extreme'
@@ -84,16 +85,14 @@ function overlappingRegion(x: number, y: number, width: number, height: number, 
   }) ?? null
 }
 
-export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, message, section, accessories, color, reactionColor, onEvent }: {
+export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, message, section, characterAsset, onEvent }: {
   onOpen: (bounds: DOMRect) => void
   buttonRef: RefObject<HTMLButtonElement | null>
   isChatOpen: boolean
   emotion: BotEmotion
   message: string
   section: BotSection
-  accessories: BotAccessory[]
-  color: string
-  reactionColor: string | null
+  characterAsset: CompanionAssetId
   onEvent: (event: CompanionEvent) => void
 }) {
   const [position, setPosition] = useState<Point | null>(null)
@@ -101,12 +100,10 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
   const [settling, setSettling] = useState(false)
   const [gaze, setGaze] = useState<Point>({ x: 0, y: 0 })
   const [speechSide, setSpeechSide] = useState<'left' | 'right'>('left')
-  const [peeking, setPeeking] = useState(false)
   const drag = useRef<DragState | null>(null)
   const returnTimer = useRef<number | null>(null)
   const suppressClick = useRef(false)
   const clearSuppress = useRef<number | null>(null)
-  const peekTimer = useRef<number | null>(null)
   const gazeIdleTimer = useRef<number | null>(null)
   const approachActive = useRef(false)
   const collisionCache = useRef<CollisionRegion[]>([])
@@ -120,20 +117,34 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
   const speechHeight = useRef(42)
   const clickHistory = useRef({ at: 0, count: 0 })
 
-  useEffect(() => {
-    if (peekTimer.current !== null) window.clearTimeout(peekTimer.current)
-    if (!isChatOpen) { setPeeking(false); setPosition(null); return }
-    setPeeking(false)
-    peekTimer.current = window.setTimeout(() => {
-      const panel = document.querySelector<HTMLElement>('.guide-panel')
-      const button = buttonRef.current
-      if (!panel || !button) return
-      const bounds = panel.getBoundingClientRect()
-      const narrow = window.innerWidth < 520
-      setPosition({ x: narrow ? bounds.left + 8 : bounds.left - button.offsetWidth / 2, y: narrow ? Math.max(0, bounds.top - button.offsetHeight / 2) : bounds.top + 10 })
-      setPeeking(true)
-    }, 3000)
-    return () => { if (peekTimer.current !== null) window.clearTimeout(peekTimer.current) }
+  const positionBesideChat = () => {
+    const panel = document.querySelector<HTMLElement>('.guide-panel')
+    const button = buttonRef.current
+    if (!panel || !button) return null
+    const panelBounds = panel.getBoundingClientRect()
+    const textArea = panel.querySelector<HTMLElement>('.guide-log')?.getBoundingClientRect()
+    const gap = 12
+    let x = panelBounds.left - button.offsetWidth - gap
+    let y = (textArea?.top ?? panelBounds.top + 100) + 14
+    y = Math.max(8, Math.min(window.innerHeight - button.offsetHeight - 8, y))
+    if (x < 8) {
+      const abovePanel = panelBounds.top - button.offsetHeight - gap
+      x = Math.max(8, Math.min(window.innerWidth - button.offsetWidth - 8, panelBounds.left + 8))
+      if (abovePanel >= 8) y = abovePanel
+    }
+    return { x, y }
+  }
+
+  useLayoutEffect(() => {
+    if (returnTimer.current !== null) { window.clearTimeout(returnTimer.current); returnTimer.current = null }
+    if (!isChatOpen) { setPosition(null); return }
+    const placeBesidePanel = () => {
+      const target = positionBesideChat()
+      if (target) setPosition(target)
+    }
+    placeBesidePanel()
+    window.addEventListener('resize', placeBesidePanel)
+    return () => window.removeEventListener('resize', placeBesidePanel)
   }, [isChatOpen, buttonRef])
 
   const placeSpeech = (left: number, top: number, width: number, height: number) => {
@@ -173,7 +184,7 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
   useEffect(() => {
     const trackPointer = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse' || drag.current) return
-      const face = buttonRef.current?.querySelector<HTMLElement>('.guide-sprite-body')
+      const face = buttonRef.current?.querySelector<HTMLElement>('.guide-character-frame')
       const bounds = face?.getBoundingClientRect()
       if (!bounds) return
       const dx = event.clientX - (bounds.left + bounds.width / 2)
@@ -189,7 +200,7 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
         if (gazeFrame.current !== null) { window.cancelAnimationFrame(gazeFrame.current); gazeFrame.current = null }
         pendingGaze.current = { x: 0, y: 0 }
         setGaze({ x: 0, y: 0 })
-      }, 180)
+      }, 1000)
     }
     window.addEventListener('pointermove', trackPointer, { passive: true })
     return () => window.removeEventListener('pointermove', trackPointer)
@@ -199,7 +210,6 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
     if (returnTimer.current !== null) window.clearTimeout(returnTimer.current)
     if (clearSuppress.current !== null) window.clearTimeout(clearSuppress.current)
     if (gazeIdleTimer.current !== null) window.clearTimeout(gazeIdleTimer.current)
-    if (peekTimer.current !== null) window.clearTimeout(peekTimer.current)
     if (moveFrame.current !== null) window.cancelAnimationFrame(moveFrame.current)
     if (inertiaFrame.current !== null) window.cancelAnimationFrame(inertiaFrame.current)
     if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
@@ -368,12 +378,21 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
 
   function returnToHome() {
     const button = buttonRef.current
+    if (isChatOpen) {
+      const target = positionBesideChat()
+      if (target) setPosition(target)
+      return
+    }
     if (!button) { setPosition(null); return }
     const x = Math.max(10, window.innerWidth - button.offsetWidth - 24)
     const y = Math.max(10, window.innerHeight - button.offsetHeight - 24)
     setPosition({ x, y })
     if (returnTimer.current !== null) window.clearTimeout(returnTimer.current)
-    returnTimer.current = window.setTimeout(() => { setPosition(null); returnTimer.current = null }, 560)
+    returnTimer.current = window.setTimeout(() => {
+      const target = isChatOpen ? positionBesideChat() : null
+      setPosition(target)
+      returnTimer.current = null
+    }, 560)
   }
 
   const moveWithKeyboard = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -384,12 +403,15 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
     const delta = { x: event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0, y: event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0 }
     setPosition({ x: Math.max(0, Math.min(window.innerWidth - bounds.width, bounds.left + delta.x)), y: Math.max(0, Math.min(window.innerHeight - bounds.height, bounds.top + delta.y)) })
     if (returnTimer.current !== null) window.clearTimeout(returnTimer.current)
-    returnTimer.current = window.setTimeout(() => setPosition(null), 560)
+    returnTimer.current = window.setTimeout(() => {
+      setPosition(isChatOpen ? positionBesideChat() : null)
+      returnTimer.current = null
+    }, 560)
   }
 
   return <button
     ref={buttonRef}
-    className={`guide-sprite-launcher${position ? ' is-positioned' : ''}${dragging ? ' is-dragging' : ''}${settling ? ' is-settling' : ''}${isChatOpen ? ' is-chat-open' : ''}${peeking ? ' is-peeking' : ''}`}
+    className={`guide-sprite-launcher${position ? ' is-positioned' : ''}${dragging ? ' is-dragging' : ''}${settling ? ' is-settling' : ''}${isChatOpen ? ' is-chat-open' : ''}`}
     style={position ? { left: position.x, top: position.y } : undefined}
     type="button"
     aria-label="Ask the site guide. Drag to move; it returns when released."
@@ -410,7 +432,7 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
     onPointerCancel={(event) => finishDrag(event, true)}
     onLostPointerCapture={(event) => finishDrag(event, true)}
   >
-    <GuideSpriteArt gaze={gaze} emotion={emotion} section={section} accessories={accessories} color={color} reactionColor={reactionColor} />
+    <GuideSpriteArt gaze={gaze} emotion={emotion} section={section} assetId={characterAsset} />
     <span key={message || 'quiet'} className={`guide-sprite-speech is-${speechSide}${message ? ' is-visible' : ''}`} role="status" aria-live="polite">{message}</span>
   </button>
 }

@@ -2979,7 +2979,8 @@ html[data-theme='dark'] .auto-scroll-toggle.is-active { color: var(--accent); bo
   background: rgba(84, 131, 179, 0.16);
   box-shadow: 0 6px 20px rgba(84, 131, 179, 0.14);
 }
-.swarm-activate:disabled { opacity: .8; cursor: default; }
+.swarm-activate:disabled { opacity: .48; cursor: default; }
+.swarm-activate:disabled.is-active { opacity: .8; }
 .swarm-activate:focus-visible { outline-color: #63b7ff; }
 .swarm-studio-transition { position: fixed; z-index: 90; inset: 0; pointer-events: none; }
 body:has(.swarm-studio) .auto-scroll-toggle { display: none; }
@@ -3329,7 +3330,7 @@ body:has(.swarm-studio) [data-swarm-building] { opacity: 0 !important; }
 @media (max-width: 760px) {
   .swarm-activate { width: 68px; min-height: 40px; padding: 0 7px; gap: 4px; font-size: 8px; }
   .swarm-activate span { display: none; }
-  .swarm-activate::after { color: var(--text); content: "SWARM"; font-size: 8px; font-weight: 700; }
+  .swarm-activate::after { color: var(--text); content: attr(data-label); font-size: 8px; font-weight: 700; }
   .swarm-topbar { height: 46px; gap: 8px; padding-inline: 10px; }
   .swarm-brand { gap: 6px; font-size: 8px; }
   .swarm-brand > svg { width: 15px; height: 15px; }
@@ -3572,14 +3573,12 @@ html:not([data-theme='dark']) .hero::after {
 @keyframes guide-sprite-eye-blink { 0%, 46%, 50%, 100% { height: 11px; } 48% { height: 1px; } }
 .guide-sprite-body { animation: guide-siri-core 3.4s ease-in-out infinite; }
 .guide-sprite-float { animation: guide-siri-glow 3.4s ease-in-out infinite; }
-.guide-sprite-launcher { transition: opacity .2s ease; }.guide-sprite-launcher.is-dragging { transition: none !important; }.guide-sprite-launcher.is-chat-open:not(.is-peeking) { opacity: 0; pointer-events: none; }.guide-sprite-launcher.is-positioned.is-peeking { z-index: 110; opacity: 1; pointer-events: auto; }
+.guide-sprite-launcher { transition: opacity .2s ease; }.guide-sprite-launcher.is-dragging { transition: none !important; }.guide-sprite-launcher.is-chat-open.is-positioned { z-index: 125; opacity: 1; pointer-events: auto; }
 .guide-panel.is-opening { animation: guide-panel-enter .4s cubic-bezier(.22, 1, .36, 1) both; }.guide-panel.is-closing { animation: guide-panel-exit .3s ease-in both; }.guide-panel.is-flight .guide-avatar { opacity: 0; }.guide-avatar { transition: opacity .18s ease; }
 .guide-flight { position: fixed; z-index: 145; display: grid; width: 54px; height: 54px; place-items: center; pointer-events: none; transform-origin: center; }.guide-flight.is-moving { transition: transform .66s cubic-bezier(.2,.8,.22,1); }
 @keyframes guide-panel-enter { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }@keyframes guide-panel-exit { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(12px) scale(.985); } }
-@keyframes guide-siri-glow { 0%, 100% { transform: translateY(0) scale(.99); filter: drop-shadow(0 0 2px rgba(54, 196, 255, .3)) drop-shadow(0 0 4px rgba(116, 85, 255, .12)); } 50% { transform: translateY(-1px) scale(1.025); filter: drop-shadow(0 0 5px rgba(59, 218, 255, .48)) drop-shadow(0 0 9px rgba(145, 79, 255, .28)); } }
-@keyframes guide-siri-core { 0%, 100% { box-shadow: inset -4px -7px 12px rgba(4,15,74,.42), inset 2px 2px 8px rgba(174,244,255,.18), 0 0 7px rgba(43,169,255,.24); } 50% { box-shadow: inset -4px -7px 12px rgba(4,15,74,.36), inset 2px 2px 8px rgba(174,244,255,.24), 0 0 11px rgba(57,225,255,.42); } }
-@keyframes guide-orb-aura-spin { to { rotate: 360deg; scale: 1.06; } }
-@keyframes guide-orb-sheen { from { transform: translate(-2px, -1px) rotate(-12deg) scale(1.03, .96); opacity: .7; } to { transform: translate(2px, 1px) rotate(12deg) scale(.96, 1.04); opacity: 1; } }
+@keyframes guide-siri-glow { 0%, 100% { transform: translateY(0) scale(.99); filter: drop-shadow(0 0 3px rgba(54, 196, 255, .48)) drop-shadow(0 0 7px rgba(116, 85, 255, .2)); } 50% { transform: translateY(-1px) scale(1.025); filter: drop-shadow(0 0 8px rgba(59, 218, 255, .78)) drop-shadow(0 0 16px rgba(145, 79, 255, .5)); } }
+@keyframes guide-siri-core { 0%, 100% { box-shadow: inset -2px -3px 5px rgba(4,15,74,.5), 0 0 7px rgba(43,169,255,.34), 0 0 12px rgba(90,81,255,.16); } 50% { box-shadow: inset -2px -3px 5px rgba(4,15,74,.4), 0 0 11px rgba(57,225,255,.7), 0 0 20px rgba(158,89,255,.46); } }
 .guide-sprite-speech { position: absolute; top: 50%; width: max-content; box-sizing: border-box; padding: 8px 11px; border: 1px solid rgba(128, 171, 255, .38); border-radius: 14px; color: var(--text); background: color-mix(in srgb, var(--bg) 94%, #687aff); box-shadow: 0 8px 24px rgba(9, 23, 62, .2); font: 600 11px var(--sans); text-align: center; white-space: normal; pointer-events: none; transform: translateY(-50%); }
 .guide-sprite-speech.is-left { right: calc(100% + 12px); left: auto; border-radius: 14px 14px 4px 14px; animation: guide-speech-in-left .28s ease-in-out both; }.guide-sprite-speech.is-right { right: auto; left: calc(100% + 12px); border-radius: 14px 14px 14px 4px; animation: guide-speech-in-right .28s ease-in-out both; }
 .guide-sprite-mouth { position: absolute; bottom: 7px; left: 50%; display: block; width: 7px; height: 4px; border-bottom: 1.5px solid #080c18; border-radius: 0 0 50% 50%; transform: translateX(-50%); transition: all .14s ease; }
@@ -3588,18 +3587,41 @@ html:not([data-theme='dark']) .hero::after {
 .guide-panel { position: fixed; z-index: 120; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); display: flex; width: min(390px, calc(100vw - 28px)); height: min(590px, calc(100dvh - 40px)); flex-direction: column; overflow: hidden; border: 1px solid var(--border-strong); border-radius: 18px; color: var(--text); background: color-mix(in srgb, var(--bg) 94%, #14283f); box-shadow: 0 22px 80px rgba(0, 0, 0, .42); }
 .guide-header { display: flex; align-items: center; gap: 11px; padding: 15px; border-bottom: 1px solid var(--border); }
 .guide-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; color: var(--cyan); background: rgba(85, 230, 255, .1); }
-.guide-avatar { width: 40px; height: 40px; overflow: visible; border-radius: 0; background: transparent; }.guide-avatar .guide-sprite-float { width: 40px; height: 40px; animation: guide-avatar-float 2.8s ease-in-out infinite; }.guide-avatar .guide-sprite-capsule { transform: scale(.68); }
-@keyframes guide-avatar-float { 0%, 100% { transform: translateY(1px) rotate(-2deg); } 50% { transform: translateY(-2px) rotate(2deg); } }
+.guide-avatar { width: 40px; height: 40px; overflow: visible; border-radius: 0; background: transparent; }.guide-avatar .guide-sprite-float { width: 40px; height: 40px; animation: none; }.guide-avatar .guide-sprite-capsule { transform: scale(.68); }
 .guide-header h2 { margin: 0; font-size: 13px; }.guide-header p { margin: 3px 0 0; color: var(--text-muted); font-size: 10px; }
 .guide-close { display: grid; width: 36px; height: 36px; margin-left: auto; place-items: center; border: 1px solid var(--border); border-radius: 50%; color: var(--text); background: transparent; cursor: pointer; }
 .guide-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }.guide-header-actions .guide-close { margin-left: 0; }.guide-settings-wrap { position: relative; }
-.guide-settings { position: absolute; z-index: 2; top: calc(100% + 10px); right: -42px; width: min(280px, calc(100vw - 52px)); padding: 14px; border: 1px solid var(--border-strong); border-radius: 13px; background: color-mix(in srgb, var(--bg) 97%, #14283f); box-shadow: 0 14px 42px rgba(0, 0, 0, .38); }
-.guide-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--text); font-size: 12px; cursor: pointer; }.guide-switch-row input { appearance: none; position: relative; width: 38px; height: 22px; flex: 0 0 auto; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(100, 134, 165, .22); cursor: pointer; transition: background .18s; }.guide-switch-row input::before { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-secondary); transition: transform .18s, background .18s; }.guide-switch-row input:checked { border-color: var(--cyan); background: rgba(85, 230, 255, .3); }.guide-switch-row input:checked::before { transform: translateX(16px); background: var(--cyan); }
-.guide-password-wrap { display: grid; gap: 7px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border); }.guide-password-wrap label { color: var(--text-secondary); font-size: 10px; }.guide-password-wrap input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; color: var(--text); background: rgba(0, 0, 0, .16); font: 11px var(--sans); }.guide-password-wrap input::placeholder { color: var(--text-muted); }
+.guide-settings { position: absolute; z-index: 2; top: calc(100% + 10px); right: 0; box-sizing: border-box; width: min(280px, calc(100vw - 52px)); padding: 14px; border: 1px solid var(--border-strong); border-radius: 13px; background: color-mix(in srgb, var(--bg) 97%, #14283f); box-shadow: 0 14px 42px rgba(0, 0, 0, .38); }
+.guide-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--text); font-size: 12px; cursor: pointer; }.guide-switch-row input { appearance: none; position: relative; width: 58px; height: 24px; flex: 0 0 auto; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(100, 134, 165, .22); cursor: pointer; transition: background .18s, border-color .18s; }.guide-switch-row input::before { content: ''; position: absolute; z-index: 1; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-secondary); transition: transform .18s, background .18s; }.guide-switch-row input::after { content: 'OFF'; position: absolute; top: 0; right: 5px; height: 22px; display: grid; place-items: center; color: var(--text-secondary); font: 700 8px var(--sans); letter-spacing: .02em; }.guide-switch-row input:checked { border-color: var(--cyan); background: rgba(85, 230, 255, .3); }.guide-switch-row input:checked::before { transform: translateX(34px); background: var(--cyan); }.guide-switch-row input:checked::after { content: 'ON'; right: auto; left: 6px; color: var(--text); }.guide-switch-row input:focus-visible, .guide-pin-inputs input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.guide-password-wrap { display: grid; gap: 7px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border); }.guide-password-wrap label { color: var(--text-secondary); font-size: 10px; }.guide-password-wrap input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 9px 10px; color: var(--text); background: rgba(0, 0, 0, .16); font: 11px var(--sans); }.guide-password-wrap input::placeholder { color: var(--text-muted); }.guide-pin-inputs { display: flex; gap: 9px; }.guide-password-wrap .guide-pin-inputs input { width: 46px; height: 46px; padding: 0; border-radius: 9px; text-align: center; font: 20px var(--mono); }.guide-pin-inputs input::placeholder { color: var(--text-muted); }
 .guide-password-hint { color: var(--text-muted); font-size: 9px; }.guide-axis-switch { margin-top: 6px; }.guide-axis-switch.is-disabled { opacity: .48; cursor: not-allowed; }
+.guide-password-wrap .guide-switch-row input { box-sizing: border-box; width: 60px; min-width: 60px; height: 26px; padding: 0; border: 1px solid var(--border-strong); background: rgba(100, 134, 165, .22); box-shadow: none; font: inherit; }
+.guide-password-wrap .guide-switch-row input::before { top: 3px; left: 3px; width: 18px; height: 18px; }
+.guide-password-wrap .guide-switch-row input::after { top: 0; right: 5px; height: 24px; }
+.guide-password-wrap .guide-switch-row input:checked::before { transform: translateX(34px); }
+.guide-password-wrap .guide-switch-row input:checked::after { left: 7px; }
+.guide-swarm-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--text); font-size: 12px; }
+.guide-swarm-row > span { flex: 1; }
+.guide-swarm-navigate { display: grid; width: 28px; height: 28px; flex: 0 0 auto; place-items: center; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); background: transparent; cursor: pointer; transition: color .2s ease-in-out, border-color .2s ease-in-out, background .2s ease-in-out, box-shadow .2s ease-in-out; }
+.guide-swarm-navigate:hover, .guide-swarm-navigate:focus-visible { border-color: var(--cyan); color: var(--cyan); background: rgba(85, 230, 255, .1); outline: none; }
+.guide-swarm-navigate:disabled { opacity: .5; cursor: not-allowed; }
+.guide-swarm-row.is-disabled { opacity: .48; cursor: not-allowed; }
+.guide-swarm-row .guide-switch-input { appearance: none; position: relative; box-sizing: border-box; width: 60px; min-width: 60px; height: 26px; flex: 0 0 auto; padding: 0; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(100, 134, 165, .22); box-shadow: none; cursor: pointer; transition: background .18s ease-in-out, border-color .18s ease-in-out; }
+.guide-swarm-row .guide-switch-input::before { content: ''; position: absolute; z-index: 1; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-secondary); transition: transform .18s ease-in-out, background .18s ease-in-out; }
+.guide-swarm-row .guide-switch-input::after { content: 'OFF'; position: absolute; top: 0; right: 5px; height: 24px; display: grid; place-items: center; color: var(--text-secondary); font: 700 8px var(--sans); }
+.guide-swarm-row .guide-switch-input:checked { border-color: var(--cyan); background: rgba(85, 230, 255, .3); }
+.guide-swarm-row .guide-switch-input:checked::before { transform: translateX(34px); background: var(--cyan); }
+.guide-swarm-row .guide-switch-input:checked::after { content: 'ON'; right: auto; left: 7px; color: var(--text); }
+.guide-swarm-row .guide-switch-input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.swarm-activate.is-guide-highlight { position: relative; z-index: 121; animation: swarm-guide-highlight 1s ease-in-out both; }
+@keyframes swarm-guide-highlight { 0%, 100% { box-shadow: inset 0 1px rgba(255,255,255,.06); } 18%, 72% { border-color: var(--cyan); box-shadow: 0 0 0 5px rgba(85, 230, 255, .16), 0 0 28px rgba(85, 230, 255, .42), inset 0 1px rgba(255,255,255,.12); } }
+@media (prefers-reduced-motion: reduce) { .swarm-activate.is-guide-highlight { animation: none; border-color: var(--cyan); box-shadow: 0 0 0 4px rgba(85, 230, 255, .18); } }
 .axis-cursor { position: fixed; z-index: 119; inset: 0; overflow: hidden; pointer-events: none; }.axis-cursor-vertical, .axis-cursor-horizontal { position: absolute; display: block; background: rgba(85, 230, 255, .72); box-shadow: 0 0 8px rgba(85, 230, 255, .22); }.axis-cursor-vertical { top: 0; bottom: 0; width: 1px; transform: translateX(-50%); }.axis-cursor-horizontal { right: 0; left: 0; height: 1px; transform: translateY(-50%); }.axis-cursor-dot { position: absolute; width: 9px; height: 9px; border: 1px solid #fff; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 9px rgba(85, 230, 255, .65); transform: translate(-50%, -50%); }.axis-cursor-label { position: absolute; margin: 10px 0 0 11px; padding: 3px 5px; border: 1px solid var(--border-strong); border-radius: 4px; color: var(--text); background: color-mix(in srgb, var(--bg) 88%, transparent); font: 9px var(--mono); white-space: nowrap; }
 .guide-log { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 12px; overflow: auto; padding: 16px 14px; }
 .guide-message { max-width: 88%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 13px; font-size: 12px; line-height: 1.65; }
+.guide-typing-message { display: flex; width: max-content; min-width: 0; align-items: center; justify-content: center; padding: 4px 8px; }
+.guide-typing-message .guide-sprite-float { width: 48px; height: 48px; animation: none !important; }
+.guide-typing-message .guide-character-frame { inset: 0; }
 .guide-message p { margin: 0; }.guide-assistant { align-self: flex-start; background: rgba(90, 120, 153, .13); }.guide-user { align-self: flex-end; border-color: rgba(100, 134, 165, .38); background: rgba(100, 134, 165, .2); }
 .guide-message a { display: inline-block; margin-top: 8px; color: var(--cyan); font-size: 11px; }.guide-dots { letter-spacing: .2em; animation: guide-pulse 1s ease-in-out infinite alternate; }
 .guide-suggestions { display: flex; gap: 7px; overflow-x: auto; padding: 0 12px 10px; }.guide-suggestions button { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 999px; padding: 7px 10px; color: var(--text-secondary); background: transparent; font: 10px var(--sans); cursor: pointer; }
@@ -3615,7 +3637,6 @@ html:not([data-theme='dark']) .hero::after {
 /* Companion expressions: emotion state is supplied by useCompanion. */
 .guide-sprite-eye { animation: none; transform: translate(var(--eye-x, 0), var(--eye-y, 0)); transition: transform .18s ease-in-out, scale .18s ease-in-out; }
 .guide-sprite-pupil { transform: translate(var(--pupil-x, 0), var(--pupil-y, 0)); transition: transform .14s ease-in-out; }
-.guide-sprite-float.is-blinking .guide-sprite-eye { scale: 1 .08; }
 .guide-sprite-speech { opacity: 0; visibility: hidden; transform: translateY(calc(-50% + 5px)); transition: opacity .24s ease-in-out, transform .24s ease-in-out, visibility 0s linear .24s; }
 .guide-sprite-speech.is-visible { opacity: 1; visibility: visible; transform: translateY(-50%); transition-delay: 0s; }
 .guide-sprite-speech.is-left.is-visible { animation: guide-speech-in-left .28s ease-in-out both; }
@@ -3654,16 +3675,10 @@ html:not([data-theme='dark']) .hero::after {
   .guide-sprite-float, .guide-sprite-body, .guide-sprite-eye, .guide-sprite-mouth, .guide-sprite-speech { animation: none !important; transition-duration: .01ms !important; }
 }
 .guide-sprite-body {
-  isolation: isolate;
-  overflow: visible;
-  background: radial-gradient(ellipse at 30% 17%, rgba(180, 250, 255, .72), transparent 25%), radial-gradient(circle at 34% 26%, color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 76%, #72dfff), color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 88%, #07184f) 75%);
-  box-shadow: inset -4px -7px 12px rgba(4, 15, 74, .42), inset 2px 2px 8px rgba(174, 244, 255, .18), 0 0 8px rgba(38, 153, 255, .25);
+  background: radial-gradient(circle at 36% 24%, color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 66%, #8bd9ff), color-mix(in srgb, var(--sprite-reaction, var(--sprite-base, #2268ed)) 72%, #07184f) 72%);
+  box-shadow: inset -3px -5px 9px rgba(4, 15, 74, .36), 0 0 22px color-mix(in srgb, var(--sprite-reaction, #2268ed) 62%, transparent);
   transition: background .42s ease-in-out, box-shadow .42s ease-in-out, rotate .3s ease-in-out;
 }
-.guide-sprite-body::before,
-.guide-sprite-body::after { position: absolute; inset: 0; display: block; border-radius: 50%; content: ''; pointer-events: none; }
-.guide-sprite-body::before { z-index: -1; inset: -7px; background: conic-gradient(from 10deg, #24e9ff, #386aff, #9b55ff, #f44cb5, #475cff, #24e9ff); filter: blur(7px); opacity: .4; animation: guide-orb-aura-spin 8s linear infinite; }
-.guide-sprite-body::after { z-index: 1; inset: 1px; border: 1px solid rgba(147, 240, 255, .48); background: radial-gradient(ellipse at 28% 18%, rgba(223, 255, 255, .52), transparent 24%), radial-gradient(ellipse at 76% 78%, rgba(54, 105, 255, .24), transparent 52%); box-shadow: inset 1px 2px 5px rgba(208, 252, 255, .2); mix-blend-mode: screen; animation: guide-orb-sheen 4.8s ease-in-out infinite alternate; }
 .guide-sprite-float { position: relative; }
 .guide-sprite-capsule { overflow: visible; }
 .guide-sprite-body { z-index: 2; }
@@ -3694,7 +3709,6 @@ html:not([data-theme='dark']) .hero::after {
 .guide-sprite-float.is-annoyed .guide-sprite-character { rotate: 5deg; }
 .guide-sprite-float.is-extremely-dizzy .guide-sprite-character { rotate: -6deg; }
 .guide-sprite-launcher { transition: opacity .2s ease, left .56s ease-in-out, top .56s ease-in-out; }
-.guide-sprite-launcher.is-chat-open:not(.is-peeking) { left: auto !important; top: auto !important; }
 .guide-sprite-float.section-projects.is-confident { animation: guide-section-nod 2.8s ease-in-out infinite; }
 .guide-sprite-float.section-about.is-confident,
 .guide-sprite-float.section-experience.is-confident { animation: guide-section-nod 3.4s ease-in-out infinite; }
@@ -3703,7 +3717,6 @@ html:not([data-theme='dark']) .hero::after {
 @keyframes guide-settle-bounce { 0% { translate: 0 -2px; } 40% { translate: 0 2px; } 72% { translate: 0 -1px; } 100% { translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) {
   .guide-sprite-accessory, .guide-sprite-suit, .guide-sprite-body { transition: none !important; }
-  .guide-sprite-body::before, .guide-sprite-body::after { animation: none !important; }
   .guide-sprite-launcher.is-dragging { rotate: 0deg; }
   .guide-sprite-launcher { transition: none !important; }
 }
@@ -3712,4 +3725,80 @@ html:not([data-theme='dark']) .hero::after {
 @keyframes guide-speech-in-left { from { opacity: 0; transform: translate(12px, calc(-50% + var(--speech-shift-y, 0px))); } to { opacity: 1; transform: translate(0, calc(-50% + var(--speech-shift-y, 0px))); } }
 @keyframes guide-speech-in-right { from { opacity: 0; transform: translate(-12px, calc(-50% + var(--speech-shift-y, 0px))); } to { opacity: 1; transform: translate(0, calc(-50% + var(--speech-shift-y, 0px))); } }
 .click-effect-layer { position: fixed; z-index: 118; inset: 0; overflow: hidden; pointer-events: none; }.click-effect-mark { position: absolute; width: 90px; height: 90px; overflow: visible; transform: translate(-50%, -50%); animation: click-effect-burst .46s cubic-bezier(.2,.75,.25,1) both; }.click-effect-mark circle, .click-effect-mark path { fill: none; stroke: var(--cyan); stroke-width: 1.5; vector-effect: non-scaling-stroke; }.click-effect-mark path { stroke-linecap: square; }.click-effect-mark .click-effect-diagonals { stroke-width: 1.2; opacity: .8; }
+
+/* Anime companion: fixed square frame keeps every supplied pose aligned while
+   transparent PNG layers crossfade without changing the launcher dimensions. */
+.guide-sprite-launcher { border: 0; background: transparent; box-shadow: none; }
+.guide-sprite-float,
+.guide-sprite-float.is-excited,
+.guide-sprite-float.is-dizzy,
+.guide-sprite-float.is-sleepy { width: 68px; height: 68px; animation: none !important; }
+.guide-sprite-capsule { display: block; width: 100%; height: 100%; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.guide-sprite-character { position: absolute; inset: 0; display: block; overflow: visible; }
+.guide-character-frame { position: absolute; inset: 0; display: block; transform-origin: 50% 55%; translate: var(--gaze-x, 0) var(--gaze-y, 0); rotate: var(--gaze-rotate, 0deg); }
+.guide-character-image { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0; object-fit: contain; object-position: center; image-rendering: auto; user-select: none; pointer-events: none; transition: opacity var(--portrait-transition, 240ms) ease-in-out; }
+.guide-character-image.is-active { opacity: 1; }
+.guide-character-image.is-outgoing { opacity: 0; }
+.guide-character-image.is-outgoing.is-visible { opacity: 1; }
+.guide-character-frame.is-animation-idle .guide-character-image { animation: companion-breathe 3.8s ease-in-out infinite; }
+.guide-character-frame.is-animation-happy .guide-character-image { animation: companion-happy .9s ease-in-out infinite; }
+.guide-character-frame.is-animation-excited .guide-character-image { animation: companion-excited .62s ease-in-out infinite; }
+.guide-character-frame.is-animation-curious .guide-character-image { animation: companion-curious 2.4s ease-in-out infinite; }
+.guide-character-frame.is-animation-surprised .guide-character-image { animation: companion-surprised .56s ease-out both; }
+.guide-character-frame.is-animation-confused .guide-character-image { animation: companion-confused 1.8s ease-in-out infinite; }
+.guide-character-frame.is-animation-annoyed .guide-character-image { animation: companion-annoyed 1.15s ease-in-out infinite; }
+.guide-character-frame.is-animation-angry .guide-character-image { animation: companion-angry .34s ease-in-out infinite; }
+.guide-character-frame.is-animation-blush .guide-character-image { animation: companion-shy 2.2s ease-in-out infinite; }
+.guide-character-frame.is-animation-sad .guide-character-image { animation: companion-sad 3.2s ease-in-out infinite; }
+.guide-character-frame.is-animation-shy .guide-character-image { animation: companion-shy 2.4s ease-in-out infinite; }
+.guide-character-frame.is-animation-sleepy .guide-character-image { animation: companion-sleepy 4.2s ease-in-out infinite; }
+.guide-character-frame.is-animation-dizzy .guide-character-image { animation: companion-dizzy .52s ease-in-out infinite; }
+.guide-character-frame.is-animation-calling .guide-character-image { animation: companion-calling 2.8s ease-in-out infinite; }
+.guide-character-frame.is-animation-cool .guide-character-image { animation: companion-cool 2.8s ease-in-out infinite; }
+.guide-character-frame.is-animation-graduated .guide-character-image { animation: companion-victory 1.4s ease-in-out infinite; }
+.guide-character-frame.is-animation-lovely .guide-character-image { animation: companion-lovely 2.1s ease-in-out infinite; }
+.guide-character-frame.is-animation-suit .guide-character-image { animation: companion-breathe 4.2s ease-in-out infinite; }
+.guide-character-frame.is-animation-thinking .guide-character-image { animation: companion-thinking 2.5s ease-in-out infinite; }
+.guide-character-frame.is-animation-thumbs-up .guide-character-image { animation: companion-happy 1.2s ease-in-out infinite; }
+.guide-character-frame.is-animation-topper .guide-character-image { animation: companion-topper 2.8s ease-in-out infinite; }
+.guide-character-frame.is-animation-typing .guide-character-image { animation: companion-typing 1.4s ease-in-out infinite; }
+.guide-character-frame.is-animation-victory .guide-character-image { animation: companion-victory .78s ease-in-out infinite; }
+.guide-sprite-launcher.is-dragging .guide-sprite-character { scale: 1; }
+.guide-sprite-launcher.is-settling .guide-character-frame { animation: companion-settle .56s ease-in-out; }
+.guide-sprite-float.is-curious .guide-sprite-character,
+.guide-sprite-float.is-surprised .guide-sprite-character,
+.guide-sprite-float.is-annoyed .guide-sprite-character,
+.guide-sprite-float.is-angry .guide-sprite-character,
+.guide-sprite-float.is-extremely-dizzy .guide-sprite-character { rotate: none !important; }
+.guide-avatar .guide-sprite-float { width: 40px; height: 40px; animation: none; }
+.guide-avatar .guide-sprite-capsule { width: 40px; height: 40px; transform: scale(.8); }
+.guide-avatar .guide-character-frame { inset: 0; }
+.guide-avatar .guide-character-frame { translate: 0 0; rotate: 0deg; }
+.guide-avatar .guide-character-image { animation: none !important; transform: none; }
+.guide-flight .guide-sprite-float { width: 54px; height: 54px; }
+.guide-flight .guide-sprite-capsule { width: 54px; height: 54px; }
+@keyframes companion-breathe { 0%, 100% { translate: 0 0; scale: 1; } 50% { translate: 0 -1px; scale: 1.012; } }
+@keyframes companion-happy { 0%, 100% { translate: 0 0; } 38% { translate: 0 -2px; } 68% { translate: 0 0; } }
+@keyframes companion-excited { 0%, 100% { translate: 0 0; scale: 1; } 50% { translate: 0 -3px; scale: 1.025; } }
+@keyframes companion-curious { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: 2deg; translate: 1px -1px; } }
+@keyframes companion-surprised { 0% { scale: 1; } 32% { scale: 1.08; } 100% { scale: 1; } }
+@keyframes companion-confused { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: -2deg; translate: 0 1px; } }
+@keyframes companion-annoyed { 0%, 100% { translate: 0 0; } 28% { translate: -1px 0; } 72% { translate: 1px 0; } }
+@keyframes companion-angry { 0%, 100% { translate: 0 0; rotate: 0deg; } 25% { translate: -1px 0; rotate: -1deg; } 75% { translate: 1px 0; rotate: 1deg; } }
+@keyframes companion-shy { 0%, 100% { translate: 0 0; scale: 1; } 50% { translate: 0 -1px; scale: 1.018; } }
+@keyframes companion-sad { 0%, 100% { translate: 0 0; } 50% { translate: 0 2px; } }
+@keyframes companion-sleepy { 0%, 100% { translate: 0 0; } 50% { translate: 0 1.5px; } }
+@keyframes companion-dizzy { 0%, 100% { rotate: -3deg; translate: 0 0; } 50% { rotate: 3deg; translate: 0 -1px; } }
+@keyframes companion-calling { 0%, 100% { rotate: 0deg; } 50% { rotate: -1.4deg; } }
+@keyframes companion-cool { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: 1deg; translate: 0 -1px; } }
+@keyframes companion-lovely { 0%, 100% { translate: 0 0; scale: 1; } 50% { translate: 0 -1px; scale: 1.02; } }
+@keyframes companion-thinking { 0%, 100% { rotate: 0deg; translate: 0 0; } 50% { rotate: 1.5deg; translate: 0 -1px; } }
+@keyframes companion-topper { 0%, 100% { rotate: 0deg; } 50% { rotate: -1deg; } }
+@keyframes companion-typing { 0%, 100% { translate: 0 0; rotate: 0deg; } 50% { translate: 0 1px; rotate: .7deg; } }
+@keyframes companion-victory { 0%, 100% { translate: 0 0; scale: 1; } 45% { translate: 0 -2.5px; scale: 1.025; } }
+@keyframes companion-settle { 0% { translate: 0 -2px; } 45% { translate: 0 2px; } 75% { translate: 0 -1px; } 100% { translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .guide-character-image { transition-duration: .01ms !important; animation: none !important; }
+  .guide-character-frame { transition-duration: .01ms !important; }
+}
 @keyframes click-effect-burst { 0% { opacity: .95; transform: translate(-50%, -50%) scale(.35) rotate(-8deg); } 75% { opacity: .8; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(0); } }

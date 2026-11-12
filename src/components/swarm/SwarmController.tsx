@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MousePointer2 } from 'lucide-react'
@@ -8,13 +8,19 @@ import type { SwarmPhase } from './swarmTypes'
 const SwarmStudio = lazy(() => import('./SwarmStudio'))
 const getAgentCount = () => 15
 
-export default function SwarmController() {
+export default function SwarmController({ enabled }: { enabled: boolean }) {
   const [phase, setPhase] = useState<SwarmPhase>('inactive')
   const [spawnOrigin, setSpawnOrigin] = useState<SwarmPoint>({ x: 0, y: 0 })
   const [agentCount, setAgentCount] = useState(getAgentCount)
   const activateRef = useRef<HTMLButtonElement>(null)
   const active = phase !== 'inactive'
   const finishLoading = useCallback(() => setPhase('active'), [])
+
+  useEffect(() => {
+    if (enabled || phase === 'inactive') return
+    document.documentElement.classList.remove('swarm-canvas-active')
+    setPhase('inactive')
+  }, [enabled, phase])
 
   const exitStudio = () => {
     document.documentElement.classList.remove('swarm-canvas-active')
@@ -27,10 +33,11 @@ export default function SwarmController() {
       ref={activateRef}
       className={`swarm-activate${active ? ' is-active' : ''}`}
       type="button"
-      title={active ? 'Swarm Studio is active' : 'Activate Swarm Mouse'}
-      aria-label={active ? 'Swarm Studio is active' : 'Activate Swarm Mouse'}
+      title={active ? 'Swarm Studio is active' : enabled ? 'Activate Swarm Mouse' : 'Enable Swarm Cursor in Developer settings'}
+      aria-label={active ? 'Swarm Studio is active' : enabled ? 'Activate Swarm Mouse' : 'Swarm Mouse disabled. Enable Swarm Cursor in Developer settings.'}
       aria-pressed={active}
-      disabled={active}
+      data-label={enabled ? 'SWARM' : 'OFF'}
+      disabled={!enabled || active}
       onClick={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect()
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -43,7 +50,7 @@ export default function SwarmController() {
       }}
     >
       <MousePointer2 aria-hidden="true" />
-      <span>{active ? 'SWARM' : 'Activate Swarm Mouse'}</span>
+      <span>{active ? 'SWARM' : enabled ? 'Activate Swarm Mouse' : 'Swarm Cursor Off'}</span>
     </button>
     {createPortal(
       <AnimatePresence mode="wait" initial={false}>
