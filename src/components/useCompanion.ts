@@ -35,6 +35,7 @@ export type CompanionState = {
   id: number
 }
 
+
 type Reaction = { emotion: BotEmotion; message: string; priority: number; duration: number; color?: string }
 
 export const sectionAppearance: Record<BotSection, { accessories: BotAccessory[]; emotion: BotEmotion; color: string; message: string }> = {
@@ -81,7 +82,7 @@ function reactionFor(event: CompanionEvent): Reaction | null {
       ? { emotion: 'annoyed', message: 'Again? Again?!', priority: 4, duration: 1800, color: '#ef704d' }
       : { emotion: 'happy', message: event.count === 2 ? 'You called again!' : 'You called?', priority: 3, duration: 2000, color: '#bb68dc' }
     case 'chat-open': return { emotion: 'excited', message: "Hey! Let's talk!", priority: 5, duration: 2400, color: '#27c3d7' }
-    case 'surprise-reminder': return { emotion: 'playful', message: 'Need Some Surprise! Click On the gear icon ⚙️!', priority: 8, duration: 4200, color: '#bb68dc' }
+    case 'surprise-reminder': return { emotion: 'playful', message: 'Need Some Surprise!\n Click On the gear icon ⚙️!', priority: 8, duration: 4200, color: '#bb68dc' }
     case 'pin-reminder': return { emotion: 'happy', message: 'Hey!! Remember the PIN is 2224.', priority: 8, duration: 4200, color: '#27c3d7' }
     case 'chat-close': return { emotion: 'relaxed', message: '', priority: 1, duration: 800 }
     case 'typing': return { emotion: 'listening', message: "I'm listening!", priority: 5, duration: 2200, color: '#20b9ba' }

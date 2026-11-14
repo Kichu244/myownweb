@@ -50,6 +50,7 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
 
 
 function App() {
+  const [portfolioLoading, setPortfolioLoading] = useState(true)
   const [path, setPath] = useState(() => {
     const currentPath = window.location.pathname
     const section = sectionFromPath(currentPath)
@@ -86,6 +87,97 @@ function App() {
   const dialogCloseRef = useRef<HTMLButtonElement>(null)
   const reduceMotion = useReducedMotion()
   const active = page === 'home' ? '' : `/${page}`
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPortfolioLoading(false), 2000)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    if (portfolioLoading) return
+    const main = document.querySelector<HTMLElement>('#main')
+    if (!main) return
+    let frame: number | null = null
+    let startTimer: number | null = null
+    let contentObserver: MutationObserver | null = null
+    let targets: HTMLElement[] = []
+    const updateProgress = () => {
+      frame = null
+      const viewportCenter = window.innerHeight / 2
+      const revealRange = Math.max(320, window.innerHeight * .82)
+      targets.forEach((target) => {
+        if (reduceMotion) {
+          target.style.opacity = '1'
+          target.style.translate = 'none'
+          return
+        }
+        const bounds = target.getBoundingClientRect()
+        const previousTranslate = Number(target.dataset.scrollTranslateY ?? 0)
+        const offset = bounds.top + bounds.height / 2 - viewportCenter - previousTranslate
+        const proximity = Math.max(0, 1 - Math.abs(offset) / revealRange)
+        const eased = proximity * proximity * (3 - 2 * proximity)
+        const translateY = Math.max(-56, Math.min(56, offset * .1))
+        target.style.opacity = eased.toFixed(3)
+        target.style.translate = `0 ${translateY.toFixed(1)}px`
+        target.dataset.scrollTranslateY = translateY.toFixed(1)
+      })
+    }
+    const requestProgressUpdate = () => {
+      if (frame === null) frame = window.requestAnimationFrame(updateProgress)
+    }
+    const attachTargets = () => {
+      const sections = Array.from(main.querySelectorAll<HTMLElement>('section')).filter((section) => !section.parentElement?.closest('section'))
+      const contentTargets = sections.flatMap((section) => {
+        let selector = ''
+        if (section.classList.contains('home-second-screen')) selector = '.home-overview-heading, .home-overview-card'
+        else if (section.classList.contains('neural-hero')) selector = '.neural-hero-layout'
+        else if (section.classList.contains('about')) selector = '.identity-visual-column, .identity-copy > h2, .identity-conversation, .identity-actions'
+        else if (section.classList.contains('skills')) selector = '.skills-title, .skills-network'
+        else if (section.classList.contains('projects-cinematic-section')) selector = '.projects-cinematic-header, .cinematic-card, .projects-cinematic-footer'
+        else if (section.classList.contains('experience')) selector = '.experience-heading, .career-entry'
+        else if (section.classList.contains('contact')) selector = '.contact-heading, .contact-interface'
+        else if (section.classList.contains('home-contact-strip')) selector = ':scope > .container'
+        const candidates = selector ? Array.from(section.querySelectorAll<HTMLElement>(selector)) : []
+        return candidates.length ? candidates : [section.querySelector<HTMLElement>(':scope > .container') ?? section]
+      })
+      const footer = document.querySelector<HTMLElement>('.contact-footer')
+      const nextTargets = contentTargets
+      if (footer) {
+        const footerContent = footer.querySelector<HTMLElement>('.footer-inner') ?? footer
+        nextTargets.push(footerContent)
+      }
+      targets.filter((target) => !nextTargets.includes(target)).forEach((target) => {
+        delete target.dataset.scrollProgress
+        delete target.dataset.scrollTranslateY
+        target.style.opacity = ''
+        target.style.translate = ''
+        target.style.willChange = ''
+      })
+      targets = nextTargets
+      targets.forEach((target) => { target.dataset.scrollProgress = ''; target.style.willChange = 'opacity, translate' })
+      updateProgress()
+    }
+    startTimer = window.setTimeout(attachTargets, reduceMotion ? 0 : 360)
+    contentObserver = new MutationObserver(attachTargets)
+    contentObserver.observe(main, { childList: true, subtree: true })
+    window.addEventListener('scroll', requestProgressUpdate, { passive: true })
+    window.addEventListener('resize', requestProgressUpdate, { passive: true })
+    return () => {
+      if (startTimer !== null) window.clearTimeout(startTimer)
+      if (frame !== null) window.cancelAnimationFrame(frame)
+      contentObserver?.disconnect()
+      window.removeEventListener('scroll', requestProgressUpdate)
+      window.removeEventListener('resize', requestProgressUpdate)
+      targets.forEach((target) => {
+        delete target.dataset.scrollProgress
+        delete target.dataset.scrollTranslateY
+        target.style.opacity = ''
+        target.style.translate = ''
+        target.style.willChange = ''
+      })
+    }
+  }, [page, portfolioLoading, reduceMotion])
+
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light'
     const transitionDocument = document as Document & {
@@ -147,9 +239,9 @@ function App() {
   }, [])
   useEffect(() => {
     document.title = page === 'home' ? `${profile.name} | Developer Portfolio` : `${page[0]?.toUpperCase()}${page.slice(1)} | ${profile.name}`
-    document.body.style.overflow = selected ? 'hidden' : ''
+    document.body.style.overflow = selected || portfolioLoading ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [selected, page])
+  }, [selected, page, portfolioLoading])
   useEffect(() => {
     const hash = window.location.hash
     if (!hash) return
@@ -517,6 +609,9 @@ function App() {
     startAutoScrollDown(15_000)
   }
   return <>
+    <div className={`portfolio-loader${portfolioLoading ? ' is-active' : ''}`} role={portfolioLoading ? 'status' : undefined} aria-label={portfolioLoading ? 'Loading portfolio' : undefined} aria-hidden={!portfolioLoading}>
+      <div className="portfolio-loader-core"><span className="portfolio-loader-mark">CS</span><span className="portfolio-loader-caption">CHRISTOPHER SAM SAJI</span><span className="portfolio-loader-track"><i /></span><span className="portfolio-loader-label">Preparing portfolio</span></div>
+    </div>
     <a className="skip-link" href="#main">Skip to content</a>
     <header className={`nav-shell${isScrolled ? ' scrolled' : ''}${navHidden ? ' nav-hidden' : ''}`}>
       <nav className="nav container glass-frosted" aria-label="Main navigation">

@@ -433,6 +433,13 @@ export default function GuideSprite({ onOpen, buttonRef, isChatOpen, emotion, me
     onLostPointerCapture={(event) => finishDrag(event, true)}
   >
     <GuideSpriteArt gaze={gaze} emotion={emotion} section={section} assetId={characterAsset} />
-    <span key={message || 'quiet'} className={`guide-sprite-speech is-${speechSide}${message ? ' is-visible' : ''}`} role="status" aria-live="polite">{message}</span>
+  <span
+    key={message || 'quiet'}
+    className={`guide-sprite-speech is-${speechSide}${message ? ' is-visible' : ''}`}
+    role="status"
+    aria-live="polite"
+    style={{ whiteSpace: 'pre-line' }}>
+    <span className="guide-speech-text" aria-label={message}>{Array.from(message).map((character, index) => <span className="guide-speech-character" aria-hidden="true" key={index} style={{ animationDelay: `${index * 28}ms` }}>{character}</span>)}</span>
+  </span>
   </button>
 }
