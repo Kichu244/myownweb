@@ -29,15 +29,15 @@ export default function SwarmController({ enabled }: { enabled: boolean }) {
   }
 
   return <>
-    <button
+    {enabled && <button
       ref={activateRef}
       className={`swarm-activate${active ? ' is-active' : ''}`}
       type="button"
-      title={active ? 'Swarm Studio is active' : enabled ? 'Activate Swarm Mouse' : 'Enable Swarm Cursor in Developer settings'}
-      aria-label={active ? 'Swarm Studio is active' : enabled ? 'Activate Swarm Mouse' : 'Swarm Mouse disabled. Enable Swarm Cursor in Developer settings.'}
+      title={active ? 'Swarm Studio is active' : 'Activate Swarm Mouse'}
+      aria-label={active ? 'Swarm Studio is active' : 'Activate Swarm Mouse'}
       aria-pressed={active}
-      data-label={enabled ? 'SWARM' : 'OFF'}
-      disabled={!enabled || active}
+      data-label="SWARM"
+      disabled={active}
       onClick={(event) => {
         const bounds = event.currentTarget.getBoundingClientRect()
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -50,8 +50,8 @@ export default function SwarmController({ enabled }: { enabled: boolean }) {
       }}
     >
       <MousePointer2 aria-hidden="true" />
-      <span>{active ? 'SWARM' : enabled ? 'Activate Swarm Mouse' : 'Swarm Cursor Off'}</span>
-    </button>
+      <span>{active ? 'SWARM' : 'Activate Swarm Mouse'}</span>
+    </button>}
     {createPortal(
       <AnimatePresence mode="wait" initial={false}>
         {phase === 'loading' && <SwarmLoader key="swarm-loader" origin={spawnOrigin} agentCount={agentCount} onComplete={finishLoading} />}

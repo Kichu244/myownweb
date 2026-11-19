@@ -1,10 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { flushSync } from 'react-dom'
 import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Menu, Moon, Pause, Play, Sun, UserRound, X } from 'lucide-react'
 import { profile, projects, skills, type Project } from './data'
 import NeuralHero, { TypingText } from './components/NeuralHero'
-import ProjectExplorer from './components/ProjectExplorer'
 import HorizontalProjects from './components/HorizontalProjects'
 import SkillsNetwork from './components/SkillsNetwork'
 import AboutIdentity from './components/AboutIdentity'
@@ -12,9 +11,12 @@ import ExperienceEducation from './components/ExperienceEducation'
 import { ContactFooter, ContactSection } from './components/ContactExperience'
 import SwarmController from './components/swarm/SwarmController'
 import WebsiteGuide from './components/WebsiteGuide'
+import { companionAssets, type CompanionAssetId } from './components/companionAssets'
 import { pageFromPath, sectionFromPath, withBasePath } from './navigation'
 
 const nav = [['About', 'about'], ['Skills', 'skills'], ['Projects', 'projects'], ['Experience', 'experience'], ['Contact', 'contact']]
+const ProjectExplorer = lazy(() => import('./components/ProjectExplorer'))
+const portfolioLoaderFrames: CompanionAssetId[] = ['default', 'annoyed', 'angry', 'blush', 'confused', 'happy', 'shy', 'lovely', 'thumbs-up', 'victory', 'cool']
 
 const smoothStopProgress = (progress: number) => 2 * progress - 5 * progress ** 4 + 6 * progress ** 5 - 2 * progress ** 6
 
@@ -47,6 +49,41 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
   </section>
 }
 
+function PortfolioLoader({ active }: { active: boolean }) {
+  const reduceMotion = useReducedMotion()
+  const [frame, setFrame] = useState(0)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (!active) {
+      setProgress(100)
+      return
+    }
+    setProgress(0)
+    const startedAt = performance.now()
+    const timer = window.setInterval(() => {
+      setProgress(Math.min(100, Math.round((performance.now() - startedAt) / 20)))
+    }, 40)
+    return () => window.clearInterval(timer)
+  }, [active])
+
+  useEffect(() => {
+    if (!active || reduceMotion) return
+    portfolioLoaderFrames.forEach((id) => {
+      const image = new Image()
+      image.src = companionAssets[id].src
+    })
+    const timer = window.setInterval(() => {
+      setFrame((current) => Math.min(current + 1, portfolioLoaderFrames.length - 1))
+    }, 180)
+    return () => window.clearInterval(timer)
+  }, [active, reduceMotion])
+
+  return <div className={`portfolio-loader${active ? ' is-active' : ''}`} role={active ? 'status' : undefined} aria-label={active ? 'Loading portfolio' : undefined} aria-hidden={!active}>
+    <div className="portfolio-loader-core"><div className="portfolio-loader-visual"><svg className="portfolio-loader-progress-ring" viewBox="0 0 112 112" aria-hidden="true"><circle className="portfolio-loader-ring-track" cx="56" cy="56" r="50" /><circle className="portfolio-loader-ring-progress" cx="56" cy="56" r="50" style={{ strokeDasharray: 314.16, strokeDashoffset: 314.16 * (1 - progress / 100) }} /></svg><span className="portfolio-loader-bot" aria-hidden="true"><img key={frame} src={companionAssets[portfolioLoaderFrames[frame]].src} alt="" draggable="false" /></span></div><span className="portfolio-loader-caption">CHRISTOPHER SAM SAJI</span><span className="portfolio-loader-label">Preparing portfolio</span><span className="portfolio-loader-percent" aria-hidden="true">{progress}%</span></div>
+  </div>
+}
+
 
 
 function App() {
@@ -68,6 +105,7 @@ function App() {
   const [autoScrollCountdown, setAutoScrollCountdown] = useState<number | null>(null)
   const [autoScrollFading, setAutoScrollFading] = useState(false)
   const [autoScrollVisible, setAutoScrollVisible] = useState(true)
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(false)
   const [selected, setSelected] = useState<Project | null>(null)
   const [swarmCursorEnabled, setSwarmCursorEnabled] = useState(false)
   const menuToggleRef = useRef<HTMLButtonElement>(null)
@@ -608,10 +646,26 @@ function App() {
     autoScrollSpeedRef.current = 0
     startAutoScrollDown(15_000)
   }
+
+  useEffect(() => {
+    if (autoScrollEnabled) return
+    if (autoScrollFrameRef.current !== null) window.cancelAnimationFrame(autoScrollFrameRef.current)
+    autoScrollFrameRef.current = null
+    clearAutoScrollCountdown()
+    if (autoScrollHideTimeoutRef.current !== null) window.clearTimeout(autoScrollHideTimeoutRef.current)
+    autoScrollHideTimeoutRef.current = null
+    autoScrollStartedAtRef.current = null
+    autoScrollDurationRef.current = 0
+    autoScrollRemainingRef.current = 15_000
+    autoScrollSpeedRef.current = 0
+    autoScrollPausedDirectionRef.current = 'down'
+    autoScrollCountdownActionRef.current = () => {}
+    setAutoScrollVisible(true)
+    changeAutoScrollMode('idle')
+  }, [autoScrollEnabled])
+
   return <>
-    <div className={`portfolio-loader${portfolioLoading ? ' is-active' : ''}`} role={portfolioLoading ? 'status' : undefined} aria-label={portfolioLoading ? 'Loading portfolio' : undefined} aria-hidden={!portfolioLoading}>
-      <div className="portfolio-loader-core"><span className="portfolio-loader-mark">CS</span><span className="portfolio-loader-caption">CHRISTOPHER SAM SAJI</span><span className="portfolio-loader-track"><i /></span><span className="portfolio-loader-label">Preparing portfolio</span></div>
-    </div>
+    <PortfolioLoader active={portfolioLoading} />
     <a className="skip-link" href="#main">Skip to content</a>
     <header className={`nav-shell${isScrolled ? ' scrolled' : ''}${navHidden ? ' nav-hidden' : ''}`}>
       <nav className="nav container glass-frosted" aria-label="Main navigation">
@@ -637,7 +691,7 @@ function App() {
         })}<p>Bengaluru, India <span>·</span> Open to learning</p>
       </nav>}
     </header>
-    {isHome && autoScrollVisible && <button className={`auto-scroll-toggle${autoScrollMode === 'down' || autoScrollMode === 'up' ? ' is-active' : ''}${autoScrollFading ? ' is-fading' : ''}${navHidden && autoScrollCountdown === null && autoScrollMode !== 'down' && autoScrollMode !== 'up' ? ' is-nav-hidden' : ''}`} type="button" aria-label={autoScrollMode === 'paused' ? 'Resume automatic scrolling' : autoScrollMode === 'down-complete' ? 'Scroll to top' : autoScrollMode === 'down' || autoScrollMode === 'up' ? 'Pause automatic scrolling' : 'Start automatic scrolling'} aria-pressed={autoScrollMode === 'down' || autoScrollMode === 'up'} onClick={toggleAutoScroll}>
+    {isHome && autoScrollEnabled && autoScrollVisible && <button className={`auto-scroll-toggle${autoScrollMode === 'down' || autoScrollMode === 'up' ? ' is-active' : ''}${autoScrollFading ? ' is-fading' : ''}${navHidden && autoScrollCountdown === null && autoScrollMode !== 'down' && autoScrollMode !== 'up' ? ' is-nav-hidden' : ''}`} type="button" aria-label={autoScrollMode === 'paused' ? 'Resume automatic scrolling' : autoScrollMode === 'down-complete' ? 'Scroll to top' : autoScrollMode === 'down' || autoScrollMode === 'up' ? 'Pause automatic scrolling' : 'Start automatic scrolling'} aria-pressed={autoScrollMode === 'down' || autoScrollMode === 'up'} onClick={toggleAutoScroll}>
       {autoScrollMode === 'down' || autoScrollMode === 'up' ? <><Pause aria-hidden="true" />{autoScrollMode === 'down' ? <ArrowDown aria-hidden="true" /> : <ArrowUp aria-hidden="true" />}</> : autoScrollMode === 'down-complete' ? <ArrowUp aria-hidden="true" /> : autoScrollMode === 'paused' ? <Play aria-hidden="true" /> : <><Play aria-hidden="true" /><ArrowDown aria-hidden="true" /></>}
       <span>{autoScrollMode === 'paused' ? 'Paused' : autoScrollMode === 'down-complete' ? 'Scroll to top' : autoScrollMode === 'down' ? 'Scrolling down' : autoScrollMode === 'up' ? 'Scrolling up' : 'Auto-scroll'}</span>
       {autoScrollCountdown !== null && <span className="auto-scroll-countdown" aria-live="polite">{autoScrollCountdown}s</span>}
@@ -659,8 +713,8 @@ function App() {
     </main>
     {isHome && <ContactFooter homePage />}
     {!isHome && <ContactFooter />}
-    <AnimatePresence>{selected && <ProjectExplorer project={selected} dialogRef={dialogRef} closeRef={dialogCloseRef} onClose={() => setSelected(null)} reduceMotion={reduceMotion} />}</AnimatePresence>
-    <WebsiteGuide path={page === 'home' ? '/' : `/${page}`} onSwarmCursorEnabledChange={setSwarmCursorEnabled} />
+    <AnimatePresence>{selected && <Suspense fallback={null}><ProjectExplorer project={selected} dialogRef={dialogRef} closeRef={dialogCloseRef} onClose={() => setSelected(null)} reduceMotion={reduceMotion} /></Suspense>}</AnimatePresence>
+    <WebsiteGuide path={page === 'home' ? '/' : `/${page}`} onSwarmCursorEnabledChange={setSwarmCursorEnabled} onAutoScrollEnabledChange={setAutoScrollEnabled} />
   </>
 }
 

@@ -14,7 +14,10 @@ export default function ClickEffect({ enabled }: { enabled: boolean }) {
       if (event.button !== 0) return
       const mark = { id: nextId.current++, x: event.clientX, y: event.clientY }
       setMarks((current) => [...current.slice(-12), mark])
-      const timer = window.setTimeout(() => setMarks((current) => current.filter((item) => item.id !== mark.id)), 460)
+      const timer = window.setTimeout(() => {
+        timers.current = timers.current.filter((activeTimer) => activeTimer !== timer)
+        setMarks((current) => current.filter((item) => item.id !== mark.id))
+      }, 460)
       timers.current.push(timer)
     }
     document.addEventListener('click', handleClick)

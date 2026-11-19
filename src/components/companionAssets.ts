@@ -20,8 +20,8 @@ type CompanionAsset = {
 
 const image = (path: string) => `${import.meta.env.BASE_URL}images/companion/processed/${path}.png`
 
-// The supplied PNGs are retained in public/images/companion; processed copies
-// only remove their opaque near-white background so they work over the site.
+// Original supplied PNGs are retained in resource/companion-originals. Processed
+// copies in public/images/companion remove the opaque background for the site.
 export const companionAssets: Record<CompanionAssetId, CompanionAsset> = {
   default: { src: image('idle/default'), category: 'default', animation: 'idle', transitionMs: 260, autoReturnToIdle: false },
   neutral: { src: image('expression/neutral'), category: 'expression', animation: 'idle', transitionMs: 240, autoReturnToIdle: true },

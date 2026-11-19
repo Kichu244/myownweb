@@ -3,7 +3,6 @@ import { assetForEmotion, baseCharacterForSection, type CompanionAssetId } from 
 
 export type BotEmotion = 'idle' | 'happy' | 'excited' | 'curious' | 'thinking' | 'surprised' | 'sad' | 'sleepy' | 'playful' | 'confident' | 'annoyed' | 'dizzy' | 'extremely-dizzy' | 'listening' | 'speaking' | 'relaxed'
 export type BotSection = 'hero' | 'overview' | 'about' | 'projects' | 'skills' | 'experience' | 'education' | 'contact' | 'footer'
-export type BotAccessory = 'professional-glasses' | 'experience-glasses' | 'project-sunglasses' | 'hud-glasses' | 'education-suit' | 'education-cap'
 export type CollisionCategory = 'content' | 'interactive' | 'visual'
 
 export type CompanionEvent =
@@ -21,7 +20,6 @@ export type CompanionEvent =
 
 export type CompanionState = {
   section: BotSection
-  accessories: BotAccessory[]
   baseEmotion: BotEmotion
   baseColor: string
   conversation: 'idle' | 'listening' | 'thinking' | 'speaking'
@@ -38,16 +36,16 @@ export type CompanionState = {
 
 type Reaction = { emotion: BotEmotion; message: string; priority: number; duration: number; color?: string }
 
-export const sectionAppearance: Record<BotSection, { accessories: BotAccessory[]; emotion: BotEmotion; color: string; message: string }> = {
-  hero: { accessories: [], emotion: 'happy', color: '#2268ed', message: 'Hey! Welcome to my portfolio! 👋' },
-  overview: { accessories: ['professional-glasses'], emotion: 'confident', color: '#2859c7', message: 'Want a quick introduction? I can help.' },
-  about: { accessories: ['professional-glasses'], emotion: 'confident', color: '#2859c7', message: 'Let me introduce you to my human!' },
-  projects: { accessories: ['project-sunglasses'], emotion: 'confident', color: '#153fc1', message: 'Ready to see something cool? 😎' },
-  skills: { accessories: ['hud-glasses'], emotion: 'thinking', color: '#087ac0', message: "Let's talk technology!" },
-  experience: { accessories: ['experience-glasses'], emotion: 'confident', color: '#2268ed', message: "Let's explore some experience!" },
-  education: { accessories: ['education-suit', 'education-cap'], emotion: 'curious', color: '#376dd7', message: 'Knowledge mode activated! 🎓' },
-  contact: { accessories: [], emotion: 'happy', color: '#2268ed', message: "Let's get in touch! 👋" },
-  footer: { accessories: [], emotion: 'relaxed', color: '#2268ed', message: "That's all for now! See you soon!" },
+export const sectionAppearance: Record<BotSection, { emotion: BotEmotion; color: string; message: string }> = {
+  hero: { emotion: 'happy', color: '#2268ed', message: 'Hey! Welcome to my portfolio! 👋' },
+  overview: { emotion: 'confident', color: '#2859c7', message: 'Want a quick introduction? I can help.' },
+  about: { emotion: 'confident', color: '#2859c7', message: 'Let me introduce you to my human!' },
+  projects: { emotion: 'confident', color: '#153fc1', message: 'Ready to see something cool? 😎' },
+  skills: { emotion: 'thinking', color: '#087ac0', message: "Let's talk technology!" },
+  experience: { emotion: 'confident', color: '#2268ed', message: "Let's explore some experience!" },
+  education: { emotion: 'curious', color: '#376dd7', message: 'Knowledge mode activated! 🎓' },
+  contact: { emotion: 'happy', color: '#2268ed', message: "Let's get in touch! 👋" },
+  footer: { emotion: 'relaxed', color: '#2268ed', message: "That's all for now! See you soon!" },
 }
 
 const sectionPrompts: Partial<Record<BotSection, string>> = {
@@ -173,7 +171,7 @@ function restingCharacter(section: BotSection, conversation: CompanionState['con
 }
 
 const initialState: CompanionState = {
-  section: 'hero', accessories: [], baseEmotion: 'happy', baseColor: sectionAppearance.hero.color,
+  section: 'hero', baseEmotion: 'happy', baseColor: sectionAppearance.hero.color,
   conversation: 'idle', emotion: 'happy', message: '', priority: 0, reactionPriority: 0, reactionColor: null, reactionKind: null, characterAsset: 'default', id: 0,
 }
 
@@ -212,7 +210,7 @@ export function useCompanion(isChatOpen: boolean) {
     if (event.type === 'section') {
       const appearance = sectionAppearance[event.section]
       const hasActiveReaction = Math.max(current.priority, current.reactionPriority) > 2
-      const next: CompanionState = { ...current, section: event.section, accessories: appearance.accessories, baseEmotion: appearance.emotion, baseColor: appearance.color, emotion: hasActiveReaction ? current.emotion : appearance.emotion, characterAsset: hasActiveReaction ? current.characterAsset : baseCharacterForSection(event.section), id: ++eventId.current }
+      const next: CompanionState = { ...current, section: event.section, baseEmotion: appearance.emotion, baseColor: appearance.color, emotion: hasActiveReaction ? current.emotion : appearance.emotion, characterAsset: hasActiveReaction ? current.characterAsset : baseCharacterForSection(event.section), id: ++eventId.current }
       const mayQueueSectionMessage = !isChatOpenRef.current && !dragActive.current && current.priority <= 2 && current.reactionPriority <= 2
       if (sectionTimer.current !== null) window.clearTimeout(sectionTimer.current)
       sectionToken.current++

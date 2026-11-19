@@ -54,14 +54,20 @@ function GithubIcon({ size = 15, className }: { size?: number; className?: strin
 export default function HorizontalProjects({ onSelect, reduceMotion = false }: HorizontalProjectsProps) {
   const [filter, setFilter] = useState('All')
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [scrollProgress, setScrollProgress] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const [hasScrolled, setHasScrolled] = useState(false)
 
   const sectionRef = useRef<HTMLElement>(null)
   const trackContainerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const progressBarRef = useRef<HTMLDivElement>(null)
+  const progressFillRef = useRef<HTMLDivElement>(null)
   const rafIdRef = useRef<number | null>(null)
+
+  const updateProgressIndicator = (progress: number) => {
+    if (progressBarRef.current) progressBarRef.current.setAttribute('aria-valuenow', String(Math.round(progress * 100)))
+    if (progressFillRef.current) progressFillRef.current.style.transform = `scaleX(${Math.max(0.05, progress)})`
+  }
 
   // Categories list derived from existing projects
   const categories = useMemo(() => ['All', ...new Set(projects.map((p) => p.category))], [])
@@ -96,23 +102,14 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
     const padding = 120
     const maxTranslateX = Math.max(0, trackWidth - windowWidth + padding)
 
-    // Set the section height so that natural vertical scrolling covers the horizontal distance
+    // Read layout before writing styles to avoid forcing layout in the scroll loop.
     const totalSectionHeight = windowHeight + maxTranslateX
-    section.style.height = `${totalSectionHeight}px`
-
-    // Determine current scroll progress through this section
     const rect = section.getBoundingClientRect()
     const scrolledPx = -rect.top
     const rawProgress = maxTranslateX > 0 ? scrolledPx / maxTranslateX : 0
     const clampedProgress = Math.min(1, Math.max(0, rawProgress))
 
-    const currentX = clampedProgress * maxTranslateX
-    track.style.transform = `translate3d(-${currentX}px, 0, 0)`
-
-    setScrollProgress(clampedProgress)
-    if (clampedProgress > 0.05) setHasScrolled(true)
-
-    // Calculate active project index based on scroll position
+    // Calculate the active project before applying scroll-loop style writes.
     const cardElements = Array.from(track.querySelectorAll<HTMLElement>('.cinematic-card'))
     if (cardElements.length > 0) {
       let activeIdx = 0
@@ -130,6 +127,11 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
       })
       setCurrentIndex(activeIdx)
     }
+
+    if (section.style.height !== `${totalSectionHeight}px`) section.style.height = `${totalSectionHeight}px`
+    track.style.transform = `translate3d(-${clampedProgress * maxTranslateX}px, 0, 0)`
+    updateProgressIndicator(clampedProgress)
+    if (clampedProgress > 0.05) setHasScrolled(true)
   }, [isMobile])
 
   // Window scroll event listener for desktop
@@ -165,7 +167,7 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
     const { scrollLeft, scrollWidth, clientWidth } = container
     const maxScroll = scrollWidth - clientWidth
     const progress = maxScroll > 0 ? scrollLeft / maxScroll : 0
-    setScrollProgress(progress)
+    updateProgressIndicator(progress)
     if (progress > 0.05) setHasScrolled(true)
 
     // Determine current card based on scrollLeft
@@ -332,10 +334,11 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
             [PROJECT-PROGRESS] HORIZONTAL PROGRESS INDICATOR
             Sapphire Blue active bar reflecting horizontal scroll progress
             ============================================================ */}
-        <div className="projects-cinematic-progress-bar" role="progressbar" aria-valuenow={Math.round(scrollProgress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Project showcase progress">
+        <div ref={progressBarRef} className="projects-cinematic-progress-bar" role="progressbar" aria-valuenow={0} aria-valuemin={0} aria-valuemax={100} aria-label="Project showcase progress">
           <div
+            ref={progressFillRef}
             className="cinematic-progress-fill"
-            style={{ width: `${Math.max(5, scrollProgress * 100)}%` }}
+            style={{ transform: 'scaleX(0.05)' }}
           />
         </div>
 

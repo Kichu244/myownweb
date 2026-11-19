@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Navigation2, Send, Settings2, X } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
+import { Check, Navigation2, Send, Settings2, X } from 'lucide-react'
 import { intents, matchIntent, normalizeMessage, type ChatIntent } from '../chatbotIntents'
 import { withBasePath } from '../navigation'
 import AxisCursor from './AxisCursor'
@@ -14,7 +14,7 @@ type Flight = { from: DOMRect; to: { x: number; y: number } | null }
 const welcome: Message = { id: 0, role: 'assistant', text: 'Hi! I’m the portfolio guide. Ask me about Christopher’s projects, skills, experience, education, or contact options.' }
 const sectionPaths: Record<string, string> = { about: '/about', skills: '/skills', projects: '/projects', experience: '/experience', contact: '/contact' }
 
-export default function WebsiteGuide({ path, onSwarmCursorEnabledChange }: { path: string; onSwarmCursorEnabledChange: (enabled: boolean) => void }) {
+export default function WebsiteGuide({ path, onSwarmCursorEnabledChange, onAutoScrollEnabledChange }: { path: string; onSwarmCursorEnabledChange: (enabled: boolean) => void; onAutoScrollEnabledChange: (enabled: boolean) => void }) {
   const [open, setOpen] = useState(false)
   const [panelVisible, setPanelVisible] = useState(false)
   const [flight, setFlight] = useState<Flight | null>(null)
@@ -34,19 +34,32 @@ export default function WebsiteGuide({ path, onSwarmCursorEnabledChange }: { pat
   const [axisCursorEnabled, setAxisCursorEnabled] = useState(false)
   const [clickEffectEnabled, setClickEffectEnabled] = useState(false)
   const [swarmCursorEnabled, setSwarmCursorEnabled] = useState(false)
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(false)
+  const [pinError, setPinError] = useState(false)
+  const [pinRowOpened, setPinRowOpened] = useState(false)
   const { companion, dispatch: companionEvent } = useCompanion(open)
   const passwordValidated = developerPin === '2224'
+
+  useEffect(() => {
+    onSwarmCursorEnabledChange(developerOption && passwordValidated && swarmCursorEnabled)
+    onAutoScrollEnabledChange(developerOption && passwordValidated && autoScrollEnabled)
+  }, [developerOption, passwordValidated, swarmCursorEnabled, autoScrollEnabled, onSwarmCursorEnabledChange, onAutoScrollEnabledChange])
   const spriteLauncherRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const settingsWrapRef = useRef<HTMLDivElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const pinInputRefs = useRef<Array<HTMLInputElement | null>>([])
   const logRef = useRef<HTMLDivElement>(null)
+  const chatWasOpen = useRef(false)
   const messageId = useRef(1)
   const closeTimer = useRef<number | null>(null)
   const surpriseReminderTimer = useRef<number | null>(null)
   const swarmNavigationTimers = useRef<number[]>([])
 
   function updatePinDigit(index: number, rawValue: string) {
+    setPinRowOpened(true)
+    setPinError(false)
     const digits = rawValue.replace(/\D/g, '')
     if (!digits) {
       const next = developerPin.split('')
@@ -59,9 +72,11 @@ export default function WebsiteGuide({ path, onSwarmCursorEnabledChange }: { pat
     entered.split('').forEach((digit, offset) => { if (index + offset < 4) next[index + offset] = digit })
     const value = next.join('').slice(0, 4)
     setDeveloperPin(value)
-    pinInputRefs.current[Math.min(index + entered.length, 3)]?.focus()
+    if (value.length === 4 && value !== '2224') setPinError(true)
+    if (value === '2224') pinInputRefs.current[index]?.blur()
+    else pinInputRefs.current[Math.min(index + entered.length, 3)]?.focus()
     if (value !== '2224') {
-      setAxisCursorEnabled(false); setClickEffectEnabled(false); setSwarmCursorEnabled(false); onSwarmCursorEnabledChange(false)
+      setAxisCursorEnabled(false); setClickEffectEnabled(false); setSwarmCursorEnabled(false); setAutoScrollEnabled(false)
     }
   }
 
@@ -90,16 +105,19 @@ export default function WebsiteGuide({ path, onSwarmCursorEnabledChange }: { pat
 
   useEffect(() => () => { if (closeTimer.current !== null) window.clearTimeout(closeTimer.current); if (surpriseReminderTimer.current !== null) window.clearTimeout(surpriseReminderTimer.current); swarmNavigationTimers.current.forEach(window.clearTimeout) }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const log = logRef.current
     if (!log) return
-    log.scrollTo({ top: log.scrollHeight, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
-  }, [messages, typing])
+    const reopening = open && !chatWasOpen.current
+    log.scrollTo({ top: log.scrollHeight, behavior: reopening || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+    chatWasOpen.current = open
+    if (open && !typing && messages[messages.length - 1]?.role === 'assistant') inputRef.current?.focus()
+  }, [messages, typing, open])
 
   useEffect(() => {
     if (!settingsOpen || !developerOption) return
-    const frame = window.requestAnimationFrame(() => pinInputRefs.current[0]?.focus())
-    return () => window.cancelAnimationFrame(frame)
+    const timer = window.setTimeout(() => pinInputRefs.current[0]?.focus(), 250)
+    return () => window.clearTimeout(timer)
   }, [settingsOpen, developerOption])
 
   function navigateToSwarmButton() {
@@ -167,9 +185,21 @@ export default function WebsiteGuide({ path, onSwarmCursorEnabledChange }: { pat
     return () => window.removeEventListener('keydown', onKey)
   }, [open, settingsOpen])
 
+  useEffect(() => {
+    if (!open && !settingsOpen) return
+    const onOutsidePointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+      if (settingsOpen && !settingsWrapRef.current?.contains(target)) setSettingsOpen(false)
+      if (open && !panelRef.current?.contains(target)) close()
+    }
+    document.addEventListener('pointerdown', onOutsidePointerDown)
+    return () => document.removeEventListener('pointerdown', onOutsidePointerDown)
+  }, [open, settingsOpen])
+
   function close() {
     companionEvent({ type: 'chat-close' })
-    setOpen(false); setContext(null); setTour(null); setSpotlight(null); setStatus(''); setFlight(null)
+    setOpen(false); setSettingsOpen(false); setContext(null); setTour(null); setSpotlight(null); setStatus(''); setFlight(null)
     if (closeTimer.current !== null) window.clearTimeout(closeTimer.current)
     closeTimer.current = window.setTimeout(() => setPanelVisible(false), 300)
     window.setTimeout(() => returnFocusRef.current?.focus(), 300)
@@ -283,8 +313,8 @@ export default function WebsiteGuide({ path, onSwarmCursorEnabledChange }: { pat
   return <>
     <GuideSprite buttonRef={spriteLauncherRef} onOpen={openFromSprite} isChatOpen={open} emotion={companion.emotion} message={companion.message} section={companion.section} characterAsset={companion.characterAsset} onEvent={companionEvent} />
     {flight && <span className={`guide-flight${flight.to ? ' is-moving' : ''}`} style={{ left: flight.from.left + (flight.from.width - 54) / 2, top: flight.from.top + (flight.from.height - 54) / 2, transform: flight.to ? `translate(${flight.to.x - (flight.from.left + (flight.from.width - 54) / 2)}px, ${flight.to.y - (flight.from.top + (flight.from.height - 54) / 2)}px) scale(.72)` : undefined }}><GuideSpriteArt emotion="excited" section={companion.section} assetId="excited" /></span>}
-    {panelVisible && <section className={`guide-panel${open ? ' is-opening' : ' is-closing'}${flight ? ' is-flight' : ''}`} role="dialog" aria-modal="false" aria-labelledby="guide-title" aria-describedby="guide-description" aria-hidden={!open}>
-      <header className="guide-header"><div className="guide-avatar"><GuideSpriteArt emotion="confident" section={companion.section} assetId="cool" /></div><div><h2 id="guide-title">Portfolio guide</h2><p id="guide-description">Local answers from this website</p></div><div className="guide-header-actions"><div className="guide-settings-wrap"><button type="button" className="guide-close guide-settings-button" aria-label="Guide settings" aria-expanded={settingsOpen} aria-controls="guide-settings" onClick={() => setSettingsOpen((value) => !value)}><Settings2 size={18} aria-hidden="true" /></button>{settingsOpen && <section className="guide-settings" id="guide-settings" aria-label="Guide settings"><label className="guide-switch-row" htmlFor="developer-option"><span>Developer option</span><input id="developer-option" type="checkbox" role="switch" checked={developerOption} onChange={(event) => { const checked = event.target.checked; setDeveloperOption(checked); if (checked) companionEvent({ type: 'pin-reminder' }); if (!checked) { setDeveloperPin(''); setAxisCursorEnabled(false); setClickEffectEnabled(false); setSwarmCursorEnabled(false); onSwarmCursorEnabledChange(false) } }} /></label>{developerOption && <div className="guide-password-wrap"><label id="developer-pin-label">Developer option PIN</label><div className="guide-pin-inputs" role="group" aria-labelledby="developer-pin-label" aria-describedby="developer-pin-hint">{Array.from({ length: 4 }, (_, index) => <input key={index} ref={(element) => { pinInputRefs.current[index] = element }} type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4} autoComplete={index === 0 ? 'one-time-code' : 'off'} aria-label={`PIN digit ${index + 1} of 4`} value={developerPin[index] ?? ''} placeholder="•" onChange={(event) => updatePinDigit(index, event.target.value)} onKeyDown={(event) => handlePinKeyDown(index, event.key)} />)}</div><small className="guide-password-hint" id="developer-pin-hint">PIN: 2224</small><label className={`guide-switch-row guide-axis-switch${passwordValidated ? '' : ' is-disabled'}`} htmlFor="axis-cursor-option"><span>Axis cursor</span><input id="axis-cursor-option" type="checkbox" role="switch" checked={axisCursorEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => setAxisCursorEnabled(event.target.checked)} /></label><label className={`guide-switch-row guide-axis-switch${passwordValidated ? '' : ' is-disabled'}`} htmlFor="click-effect-option"><span>Click effect</span><input id="click-effect-option" type="checkbox" role="switch" checked={clickEffectEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => setClickEffectEnabled(event.target.checked)} /></label><div className={`guide-swarm-row${passwordValidated ? '' : ' is-disabled'}`}><span id="swarm-cursor-label">Swarm Cursor</span><button type="button" className="guide-swarm-navigate" aria-label="Close panels and highlight Swarm Cursor button" title="Go to Swarm Cursor button" disabled={!passwordValidated} onClick={navigateToSwarmButton}><Navigation2 size={15} aria-hidden="true" /></button><input className="guide-switch-input" id="swarm-cursor-option" type="checkbox" role="switch" aria-labelledby="swarm-cursor-label" checked={swarmCursorEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => { const enabled = event.target.checked; setSwarmCursorEnabled(enabled); onSwarmCursorEnabledChange(enabled) }} /></div></div>}</section>}</div><button type="button" className="guide-close" aria-label="Close site guide" onClick={close}><X size={18} /></button></div></header>
+    {panelVisible && <section ref={panelRef} className={`guide-panel${open ? ' is-opening' : ' is-closing'}${flight ? ' is-flight' : ''}`} role="dialog" aria-modal="false" aria-labelledby="guide-title" aria-describedby="guide-description" aria-hidden={!open}>
+      <header className="guide-header"><div className="guide-avatar"><GuideSpriteArt emotion="confident" section={companion.section} assetId="cool" /></div><div><h2 id="guide-title">Portfolio guide</h2><p id="guide-description">Local answers from this website</p></div><div className="guide-header-actions"><div className="guide-settings-wrap" ref={settingsWrapRef}><button type="button" className="guide-close guide-settings-button" aria-label="Guide settings" aria-expanded={settingsOpen} aria-controls="guide-settings" onClick={() => setSettingsOpen((value) => !value)}><Settings2 size={18} aria-hidden="true" /></button>{settingsOpen && <section className="guide-settings" id="guide-settings" aria-label="Guide settings"><label className="guide-switch-row" htmlFor="developer-option"><span>Dev Tools</span><input id="developer-option" type="checkbox" role="switch" checked={developerOption} onChange={(event) => { const checked = event.target.checked; setDeveloperOption(checked); if (checked) companionEvent({ type: 'pin-reminder' }); if (!checked) { setDeveloperPin(''); setPinError(false); setPinRowOpened(false); setAxisCursorEnabled(false); setClickEffectEnabled(false); setSwarmCursorEnabled(false); setAutoScrollEnabled(false); onSwarmCursorEnabledChange(false) } }} /></label>{developerOption && <div className="guide-password-wrap"><div className={`guide-pin-control${passwordValidated ? " is-verified" : ""}`}><label id="developer-pin-label">Developer option PIN</label><div className={`guide-pin-inputs${pinError ? " is-error" : ""}${passwordValidated ? " is-verified" : ""}${!pinRowOpened && !passwordValidated ? " is-entering" : ""}`} role="group" aria-invalid={pinError || undefined} onAnimationEnd={(event) => { if (event.target !== event.currentTarget) return; if (event.animationName === 'pin-row-space') setPinRowOpened(true); if (pinError && event.animationName === 'pin-input-shake') { setDeveloperPin(''); setPinError(false); setPinRowOpened(true); pinInputRefs.current[0]?.focus() } }} aria-labelledby="developer-pin-label" aria-describedby="developer-pin-hint">{Array.from({ length: 4 }, (_, index) => <input key={index} ref={(element) => { pinInputRefs.current[index] = element }} type="password" inputMode="numeric" pattern="[0-9]*" maxLength={4} autoComplete={index === 0 ? 'one-time-code' : 'off'} aria-label={`PIN digit ${index + 1} of 4`} value={developerPin[index] ?? ''} placeholder="•" onChange={(event) => updatePinDigit(index, event.target.value)} onKeyDown={(event) => handlePinKeyDown(index, event.key)} />)}{passwordValidated && <span className="pin-verified-check" role="status" aria-label="PIN verified"><Check size={18} strokeWidth={3} aria-hidden="true" /></span>}</div><small className="guide-password-hint" id="developer-pin-hint" aria-live="polite">{pinError ? "Incorrect PIN. Try again." : passwordValidated ? "PIN verified" : "PIN: 2224"}</small></div>{passwordValidated && <div className="dev-tools-options"><label className={`guide-switch-row guide-axis-switch${passwordValidated ? '' : ' is-disabled'}`} htmlFor="axis-cursor-option"><span>Axis cursor</span><input id="axis-cursor-option" type="checkbox" role="switch" checked={axisCursorEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => setAxisCursorEnabled(event.target.checked)} /></label><label className={`guide-switch-row guide-axis-switch${passwordValidated ? '' : ' is-disabled'}`} htmlFor="click-effect-option"><span>Click effect</span><input id="click-effect-option" type="checkbox" role="switch" checked={clickEffectEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => setClickEffectEnabled(event.target.checked)} /></label><div className={`guide-swarm-row${passwordValidated ? '' : ' is-disabled'}`}><span id="swarm-cursor-label">Swarm Cursor</span><button type="button" className="guide-swarm-navigate" aria-label="Close panels and highlight Swarm Cursor button" title="Go to Swarm Cursor button" disabled={!passwordValidated} onClick={navigateToSwarmButton}><Navigation2 size={15} aria-hidden="true" /></button><input className="guide-switch-input" id="swarm-cursor-option" type="checkbox" role="switch" aria-labelledby="swarm-cursor-label" checked={swarmCursorEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => { const enabled = event.target.checked; setSwarmCursorEnabled(enabled) }} /></div><label className={`guide-switch-row guide-axis-switch${passwordValidated ? '' : ' is-disabled'}`} htmlFor="auto-scroll-option"><span>Auto-scroll</span><input id="auto-scroll-option" type="checkbox" role="switch" checked={autoScrollEnabled && passwordValidated} disabled={!passwordValidated} onChange={(event) => setAutoScrollEnabled(event.target.checked)} /></label></div>}</div>}</section>}</div><button type="button" className="guide-close" aria-label="Close site guide" onClick={close}><X size={18} /></button></div></header>
       <div ref={logRef} className="guide-log" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions text">
         {messages.map((message) => <div className={`guide-message guide-${message.role}`} key={message.id}><p>{message.text}</p>{message.link && <a href={withBasePath(message.link.path)} onClick={(event) => { event.preventDefault(); const target = (message.link?.path ?? '/').replace('/', ''); const tourPoints = target === 'contact' ? ['Let’s make'] : target === 'experience' ? ['My Journey', 'Education'] : target === 'about' ? ['Who am I'] : target === 'skills' ? ['technologies'] : ['Built to Solve']; navigate({ id: 'navigation', category: 'navigation', priority: 5, reply: '', link: message.link, tour: tourPoints }) }}>{message.link.label} →</a>}</div>)}
         {typing && <div className="guide-message guide-assistant guide-typing-message" role="status" aria-label="Guide is typing"><GuideSpriteArt emotion="listening" section={companion.section} assetId="typing" /></div>}
