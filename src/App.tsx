@@ -9,6 +9,7 @@ import SkillsNetwork from './components/SkillsNetwork'
 import AboutIdentity from './components/AboutIdentity'
 import ExperienceEducation from './components/ExperienceEducation'
 import { ContactFooter, ContactSection } from './components/ContactExperience'
+import { FadeUp } from './components/FadeUp'
 import SwarmController from './components/swarm/SwarmController'
 import WebsiteGuide from './components/WebsiteGuide'
 import { companionAssets, type CompanionAssetId } from './components/companionAssets'
@@ -38,12 +39,12 @@ function HomeOverview({ reduceMotion }: { reduceMotion: boolean | null }) {
 
   return <section className="home-overview section-pad" id="home-overview" data-swarm-section="overview" aria-label="Portfolio overview">
     <div className="container" data-swarm="container">
-      <div className="home-overview-heading" ref={overviewRef}><h2 data-swarm="heading">A little<br /><span>about me.</span></h2><h3 data-swarm="text">Curious by nature, learning through projects</h3><p data-swarm="text"><TypingText text={`I'm ${profile.name}, based in Bengaluru, India. I enjoy exploring how software and connected devices work, and learning by building projects with Python, Odoo, data workflows, and web technologies.`} active={overviewVisible} delay={350} speed={18} reduceMotion={reduceMotion} /></p></div>
+      <div className="home-overview-heading" ref={overviewRef}><FadeUp as="h2" data-swarm="heading">A little<br /><span>about me.</span></FadeUp><h3 data-swarm="text">Curious by nature, learning through projects</h3><p data-swarm="text"><TypingText text={`I'm ${profile.name}, based in Bengaluru, India. I enjoy exploring how software and connected devices work, and learning by building projects with Python, Odoo, data workflows, and web technologies.`} active={overviewVisible} delay={350} speed={18} reduceMotion={reduceMotion} /></p></div>
       <div className="home-overview-grid">
-        <a className="home-overview-card glass-frosted" data-swarm="card" href="#about"><h3>About me</h3><p>{profile.role} · Bengaluru</p><span className="home-overview-link">More about me <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-frosted" data-swarm="card" href="#skills"><h3>Skills</h3><p>{skills.slice(0, 3).map((group) => group.name).join(' · ')}</p><span className="home-overview-link">Explore skills <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-crystal" data-swarm="card" href="#projects"><h3>Projects</h3><p>ERP, data, web, and IoT experiments.</p><span className="home-overview-link">Browse projects <ArrowRight size={15} /></span></a>
-        <a className="home-overview-card glass-frosted" data-swarm="card" href="#experience"><h3>Experience & education</h3><p>AutoChip India · Neopraxis · BCA Cyber Security</p><span className="home-overview-link">View my journey <ArrowRight size={15} /></span></a>
+        <FadeUp as="a" delay={0} className="home-overview-card glass-frosted" data-swarm="card" href="#about"><h3>About me</h3><p>{profile.role} · Bengaluru</p><span className="home-overview-link">More about me <ArrowRight size={15} /></span></FadeUp>
+        <FadeUp as="a" delay={75} className="home-overview-card glass-frosted" data-swarm="card" href="#skills"><h3>Skills</h3><p>{skills.slice(0, 3).map((group) => group.name).join(' · ')}</p><span className="home-overview-link">Explore skills <ArrowRight size={15} /></span></FadeUp>
+        <FadeUp as="a" delay={150} className="home-overview-card glass-crystal" data-swarm="card" href="#projects"><h3>Projects</h3><p>ERP, data, web, and IoT experiments.</p><span className="home-overview-link">Browse projects <ArrowRight size={15} /></span></FadeUp>
+        <FadeUp as="a" delay={225} className="home-overview-card glass-frosted" data-swarm="card" href="#experience"><h3>Experience & education</h3><p>AutoChip India · Neopraxis · BCA Cyber Security</p><span className="home-overview-link">View my journey <ArrowRight size={15} /></span></FadeUp>
       </div>
     </div>
   </section>
@@ -88,6 +89,7 @@ function PortfolioLoader({ active }: { active: boolean }) {
 
 function App() {
   const [portfolioLoading, setPortfolioLoading] = useState(true)
+  const [portfolioLoaderExited, setPortfolioLoaderExited] = useState(false)
   const [path, setPath] = useState(() => {
     const currentPath = window.location.pathname
     const section = sectionFromPath(currentPath)
@@ -133,88 +135,9 @@ function App() {
 
   useEffect(() => {
     if (portfolioLoading) return
-    const main = document.querySelector<HTMLElement>('#main')
-    if (!main) return
-    let frame: number | null = null
-    let startTimer: number | null = null
-    let contentObserver: MutationObserver | null = null
-    let targets: HTMLElement[] = []
-    const updateProgress = () => {
-      frame = null
-      const viewportCenter = window.innerHeight / 2
-      const revealRange = Math.max(320, window.innerHeight * .82)
-      targets.forEach((target) => {
-        if (reduceMotion) {
-          target.style.opacity = '1'
-          target.style.translate = 'none'
-          return
-        }
-        const bounds = target.getBoundingClientRect()
-        const previousTranslate = Number(target.dataset.scrollTranslateY ?? 0)
-        const offset = bounds.top + bounds.height / 2 - viewportCenter - previousTranslate
-        const proximity = Math.max(0, 1 - Math.abs(offset) / revealRange)
-        const eased = proximity * proximity * (3 - 2 * proximity)
-        const translateY = Math.max(-56, Math.min(56, offset * .1))
-        target.style.opacity = eased.toFixed(3)
-        target.style.translate = `0 ${translateY.toFixed(1)}px`
-        target.dataset.scrollTranslateY = translateY.toFixed(1)
-      })
-    }
-    const requestProgressUpdate = () => {
-      if (frame === null) frame = window.requestAnimationFrame(updateProgress)
-    }
-    const attachTargets = () => {
-      const sections = Array.from(main.querySelectorAll<HTMLElement>('section')).filter((section) => !section.parentElement?.closest('section'))
-      const contentTargets = sections.flatMap((section) => {
-        let selector = ''
-        if (section.classList.contains('home-second-screen')) selector = '.home-overview-heading, .home-overview-card'
-        else if (section.classList.contains('neural-hero')) selector = '.neural-hero-layout'
-        else if (section.classList.contains('about')) selector = '.identity-visual-column, .identity-copy > h2, .identity-conversation, .identity-actions'
-        else if (section.classList.contains('skills')) selector = '.skills-title, .skills-network'
-        else if (section.classList.contains('projects-cinematic-section')) selector = '.projects-cinematic-header, .cinematic-card, .projects-cinematic-footer'
-        else if (section.classList.contains('experience')) selector = '.experience-heading, .career-entry'
-        else if (section.classList.contains('contact')) selector = '.contact-heading, .contact-interface'
-        else if (section.classList.contains('home-contact-strip')) selector = ':scope > .container'
-        const candidates = selector ? Array.from(section.querySelectorAll<HTMLElement>(selector)) : []
-        return candidates.length ? candidates : [section.querySelector<HTMLElement>(':scope > .container') ?? section]
-      })
-      const footer = document.querySelector<HTMLElement>('.contact-footer')
-      const nextTargets = contentTargets
-      if (footer) {
-        const footerContent = footer.querySelector<HTMLElement>('.footer-inner') ?? footer
-        nextTargets.push(footerContent)
-      }
-      targets.filter((target) => !nextTargets.includes(target)).forEach((target) => {
-        delete target.dataset.scrollProgress
-        delete target.dataset.scrollTranslateY
-        target.style.opacity = ''
-        target.style.translate = ''
-        target.style.willChange = ''
-      })
-      targets = nextTargets
-      targets.forEach((target) => { target.dataset.scrollProgress = ''; target.style.willChange = 'opacity, translate' })
-      updateProgress()
-    }
-    startTimer = window.setTimeout(attachTargets, reduceMotion ? 0 : 360)
-    contentObserver = new MutationObserver(attachTargets)
-    contentObserver.observe(main, { childList: true, subtree: true })
-    window.addEventListener('scroll', requestProgressUpdate, { passive: true })
-    window.addEventListener('resize', requestProgressUpdate, { passive: true })
-    return () => {
-      if (startTimer !== null) window.clearTimeout(startTimer)
-      if (frame !== null) window.cancelAnimationFrame(frame)
-      contentObserver?.disconnect()
-      window.removeEventListener('scroll', requestProgressUpdate)
-      window.removeEventListener('resize', requestProgressUpdate)
-      targets.forEach((target) => {
-        delete target.dataset.scrollProgress
-        delete target.dataset.scrollTranslateY
-        target.style.opacity = ''
-        target.style.translate = ''
-        target.style.willChange = ''
-      })
-    }
-  }, [page, portfolioLoading, reduceMotion])
+    const timer = window.setTimeout(() => setPortfolioLoaderExited(true), 380)
+    return () => window.clearTimeout(timer)
+  }, [portfolioLoading])
 
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light'
@@ -700,7 +623,7 @@ function App() {
     <main id="main" className={isHome ? 'site-home' : 'inner-page'}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={page} initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} transition={{ duration: reduceMotion ? 0 : .3, ease: [0.22, 1, 0.36, 1] }}>
-          {!validPage && <NeuralHero name={profile.name} role={profile.role} homePage={isHome} />}
+          {!validPage && <NeuralHero name={profile.name} role={profile.role} homePage={isHome} loadingComplete={!portfolioLoading && portfolioLoaderExited} />}
           {isHome && <section className="home-second-screen" aria-label="Quick introduction and links"><HomeOverview reduceMotion={reduceMotion} /></section>}
           {(page === 'about' || isHome) && <AboutIdentity homePage={isHome} />}
           {(page === 'skills' || isHome) && <SkillsNetwork groups={skills} />}

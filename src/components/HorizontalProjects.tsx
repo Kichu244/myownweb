@@ -24,6 +24,7 @@ import {
   Code2
 } from 'lucide-react'
 import { projects, type Project } from '../data'
+import { FadeUp } from './FadeUp'
 import ProjectVisualization from './ProjectVisualization'
 
 interface HorizontalProjectsProps {
@@ -250,9 +251,9 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
               <Sparkles size={13} className="eyebrow-sparkle" aria-hidden="true" />
               PORTFOLIO / SHOWCASE
             </span>
-            <h2 className="projects-cinematic-heading" data-swarm="heading">
+            <FadeUp as="h2" className="projects-cinematic-heading" data-swarm="heading">
               Built to Solve. <span>Made to Learn.</span>
-            </h2>
+            </FadeUp>
             <p className="projects-cinematic-subtext" data-swarm="text">
               Horizontal engineering showcase. Explore architecture, system workflows, and connected concepts.
             </p>
@@ -356,7 +357,9 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
 
               return (
                 // [PROJECT-CARD] Large Project Card
-                <article
+                <FadeUp
+                  as="article"
+                  delay={idx * 90}
                   key={project.id}
                   id={`project-card-${project.id}`}
                   className={`cinematic-card glass-deep project-theme-${project.number}${isCurrent ? ' is-active' : ''}`}
@@ -489,7 +492,7 @@ export default function HorizontalProjects({ onSelect, reduceMotion = false }: H
                       )}
                     </div>
                   </div>
-                </article>
+                </FadeUp>
               )
             })}
           </div>

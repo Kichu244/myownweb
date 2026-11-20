@@ -9,6 +9,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ChevronDown, ArrowUpRight } from 'lucide-react'
 import { education, experience } from '../data'
 import { withBasePath } from '../navigation'
+import { FadeUp } from './FadeUp'
 
 // Type definition for career entry item
 type CareerItem = (typeof experience)[number]
@@ -26,7 +27,6 @@ function CareerProjectDisclosure({
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const reduceMotion = useReducedMotion()
-
   return (
     <div className={`career-project-accordion${isExpanded ? ' is-expanded' : ' is-collapsed'}`}>
       <button
@@ -102,23 +102,15 @@ function CareerProjectDisclosure({
 // ExperienceEducation — Default Export
 // ============================================================
 export default function ExperienceEducation({ homePage = false }: { homePage?: boolean }) {
-  const reduceMotion = useReducedMotion()
-
   return (
     <section className="experience section-pad" id="experience" data-swarm-section="experience">
       <div className="container" data-swarm="container">
-        <motion.div
-          className="experience-heading"
-          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: reduceMotion ? 0 : 0.45 }}
-        >
+        <FadeUp className="experience-heading">
           <h2 data-swarm="heading">
             My <span>Journey&nbsp;</span>
           </h2>
           <p data-swarm="text">Professional experience, project work, and the education behind my path.</p>
-        </motion.div>
+        </FadeUp>
 
         <div className="career-panels">
           {/* Experience Column */}
@@ -131,8 +123,8 @@ export default function ExperienceEducation({ homePage = false }: { homePage?: b
               Experience
             </h3>
             <div className="career-timeline">
-              {experience.map((item) => (
-                <article className="career-entry" data-swarm="card" key={`${item.organization}-${item.role}`}>
+              {experience.map((item, index) => (
+                <FadeUp as="article" delay={index * 90} className="career-entry" data-swarm="card" key={`${item.organization}-${item.role}`}>
                   <span className="career-entry-marker" aria-hidden="true" />
                   <div className="career-entry-content">
                     <div className="career-entry-top">
@@ -156,7 +148,7 @@ export default function ExperienceEducation({ homePage = false }: { homePage?: b
                       {item.location}
                     </span>
                   </div>
-                </article>
+                </FadeUp>
               ))}
             </div>
           </section>
@@ -171,8 +163,10 @@ export default function ExperienceEducation({ homePage = false }: { homePage?: b
               Education
             </h3>
             <div className="career-timeline">
-              {education.map((item) => (
-                <article
+              {education.map((item, index) => (
+                <FadeUp
+                  as="article"
+                  delay={index * 90}
                   className="career-entry"
                   data-swarm="card"
                   key={`${item.institution}-${item.qualification}`}
@@ -198,7 +192,7 @@ export default function ExperienceEducation({ homePage = false }: { homePage?: b
                       {item.dateNote}
                     </span>
                   </div>
-                </article>
+                </FadeUp>
               ))}
             </div>
           </section>

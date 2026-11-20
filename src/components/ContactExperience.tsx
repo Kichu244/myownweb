@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowUpRight, Check, ExternalLink, UserRound } from 'lucide-react'
 import { profile } from '../data'
 import { withBasePath } from '../navigation'
+import { FadeUp } from './FadeUp'
 
 const footerLinks = [['About', '/about'], ['Skills', '/skills'], ['Projects', '/projects'], ['Experience', '/experience'], ['Contact', '/contact']]
 
 export function ContactSection() {
   const [copyStatus, setCopyStatus] = useState('')
-  const reduceMotion = useReducedMotion()
 
   const copyProfile = async () => {
     try {
@@ -22,12 +21,12 @@ export function ContactSection() {
 
   return <section className="contact section-pad" id="contact" data-swarm-section="contact">
     <div className="container contact-container" data-swarm="container">
-      <motion.div className="contact-heading" initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduceMotion ? 0 : .5 }}>
+      <FadeUp className="contact-heading">
         <h2 data-swarm="heading">Let’s make<br /><span>something useful.</span></h2>
         <p data-swarm="text">I’m interested in building useful software, exploring new technologies, and collaborating on meaningful projects.</p>
-      </motion.div>
+      </FadeUp>
 
-      <div className="contact-interface glass-crystal" data-swarm="card">
+      <FadeUp className="contact-interface glass-crystal" data-swarm="card">
         <div className="contact-signal-panel" data-swarm="image" aria-hidden="true">
           <span className="contact-signal-label">CONNECTION / AVAILABLE</span>
           <svg className="contact-signal-graphic" viewBox="0 0 560 250" focusable="false">
@@ -60,19 +59,19 @@ export function ContactSection() {
           </button>
           <span className="contact-copy-status" role="status" aria-live="polite">{copyStatus}</span>
         </div>
-      </div>
+      </FadeUp>
     </div>
   </section>
 }
 
 export function ContactFooter({ homePage = false }: { homePage?: boolean }) {
   return <footer className="footer contact-footer">
-    <div className="container footer-inner">
+    <FadeUp className="container footer-inner">
       <a className="footer-brand" href={homePage ? '#home' : withBasePath('/')} aria-label={`${profile.name}, back to home`}><span className="brand-mark"><UserRound aria-hidden="true" /></span><span>{profile.name}</span></a>
       <nav className="footer-nav" aria-label="Footer navigation">{footerLinks.map(([label, href]) => <a href={homePage ? `#${href.slice(1)}` : withBasePath(href)} key={href}>{label}</a>)}</nav>
       <a className="footer-linkedin" href={profile.linkedin} target="_blank" rel="noopener noreferrer">LINKEDIN <ArrowUpRight aria-hidden="true" size={13} /></a>
       <span className="footer-copyright">© {new Date().getFullYear()}</span>
       <a className="back-top" href={homePage ? '#home' : withBasePath('/')}>BACK TO HOME <ArrowUpRight size={14} aria-hidden="true" /></a>
-    </div>
+    </FadeUp>
   </footer>
 }

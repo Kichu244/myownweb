@@ -9,6 +9,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { withBasePath } from '../navigation'
 import CircuitGraphic from './CircuitGraphic'
+import { FadeUp } from './FadeUp'
 
 // ------------------------------------------------------------
 // Type Definitions
@@ -18,6 +19,7 @@ type NeuralHeroProps = {
   name: string
   role: string
   homePage?: boolean
+  loadingComplete?: boolean
 }
 
 // ============================================================
@@ -73,7 +75,7 @@ export function TypingText({ text, active, delay = 0, speed = 22, emphasis, redu
 // Styles: styles.css → [HERO-01] through [HERO-20]
 // ============================================================
 
-export default function NeuralHero({ name, role, homePage = false }: NeuralHeroProps) {
+export default function NeuralHero({ name, role, homePage = false, loadingComplete = true }: NeuralHeroProps) {
   const [photoLoaded, setPhotoLoaded] = useState(false)
   const [photoUnavailable, setPhotoUnavailable] = useState(false)
   const [introVisible, setIntroVisible] = useState(false)
@@ -91,7 +93,7 @@ export default function NeuralHero({ name, role, homePage = false }: NeuralHeroP
   return (
     // [HERO-01] Hero Section Wrapper
     // Styles: styles.css → [HERO-01] (.hero, .neural-hero)
-    <section className="hero neural-hero" id="home" data-swarm-section="hero">
+    <FadeUp as="section" enabled={!homePage || loadingComplete} className="hero neural-hero" id="home" data-swarm-section="hero">
 
       {/* [HERO-02] Hero Atmosphere — Decorative Background Layer
           Contains: grid, particles, circuit SVG
@@ -200,6 +202,6 @@ export default function NeuralHero({ name, role, homePage = false }: NeuralHeroP
           </div>
         </motion.div>
       </div>
-    </section>
+    </FadeUp>
   )
 }

@@ -10,6 +10,7 @@ import { ArrowRight } from 'lucide-react'
 import { withBasePath } from '../navigation'
 import { profile, skills } from '../data'
 import { TypingText } from './NeuralHero'
+import { FadeUp } from './FadeUp'
 
 // ============================================================
 // AboutIdentity — Default Export
@@ -107,13 +108,13 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
 
           {/* [ABOUT-04] Identity Photo Image — Profile Photo Card
               Styles: styles.css → [ABOUT-04] (.identity-visual.glass-crystal, .identity-photo) */}
-          <aside className="identity-visual glass-crystal" data-swarm="image">
+          <FadeUp as="aside" className="identity-visual glass-crystal" data-swarm="image">
             <img
               className="identity-photo"
               src={`${import.meta.env.BASE_URL}images/mypic2.png`}
               alt={`${profile.name}, portrait`}
             />      
-          </aside>
+          </FadeUp>
 
           {/* [ABOUT-16] Identity Actions Buttons — View Skills / View Experience
               Styles: styles.css → [ABOUT-16] (.identity-actions, .button, .button-primary, .button-quiet) */}
@@ -125,11 +126,11 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
 
         {/* [ABOUT-06] Identity Copy Column — Right Column (Text Content)
             Styles: styles.css → [ABOUT-06] (.identity-copy) */}
-        <motion.div className="identity-copy" initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: reduceMotion ? 0 : .55 }}>
+        <div className="identity-copy">
 
           {/* [ABOUT-07] Identity H2 Heading — "Who am I?"
               Styles: styles.css → [ABOUT-07] (.identity-copy h2) */}
-          <h2 data-swarm="heading">Who am <span>I&nbsp;?&nbsp;</span></h2>
+          <FadeUp as="h2" data-swarm="heading">Who am <span>I&nbsp;?&nbsp;</span></FadeUp>
 
           {/* [ABOUT-08] Identity Conversation Box — Animated Sequential Chat Lines
               Animates height from 190px to auto on completion.
@@ -208,7 +209,7 @@ export default function AboutIdentity({ homePage = false }: { homePage?: boolean
           {/* [ABOUT-15] Identity Location Badge — Location Label
               Styles: styles.css → [ABOUT-15] (.identity-location, .location-dot) */}
           <div className="identity-location" data-swarm="style"><span className="location-dot" />BENGALURU, KARNATAKA, INDIA</div>
-        </motion.div>
+        </div>
       </div>
     </section>
   )

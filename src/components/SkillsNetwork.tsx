@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { FadeUp } from './FadeUp'
 
 // ------------------------------------------------------------
 // Type Definition
@@ -137,7 +138,7 @@ export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
       {/* [SKILL-02] Skills Title — Section Heading
           Styles: styles.css → [SKILL-02] (.skills-title, .section-title) */}
       <div className="container" data-swarm="container">
-        <div className="section-title skills-title"><h2 data-swarm="heading">The technologies I use and the skills I bring to every project.</h2></div>
+        <FadeUp className="section-title skills-title"><h2 data-swarm="heading">The technologies I use and the skills I bring to every project.</h2></FadeUp>
 
         {/* [SKILL-03] Skills Network Grid Container — Three-Column Layout
             Ref: networkRef — used for connection path calculations
@@ -174,9 +175,9 @@ export default function SkillsNetwork({ groups }: { groups: SkillGroup[] }) {
                 {/* [SKILL-09] Skills Category Button — Individual Category (Python, Web, IoT …)
                     Active state: .is-active
                     Styles: styles.css → [SKILL-09] (.skills-category, .skills-tree-category, .is-active) */}
-                {groups.map((item, index) => <button className={`skills-category skills-tree-category${categoryIndex === index ? ' is-active' : ''}`} data-swarm="card" type="button" key={item.name} aria-pressed={categoryIndex === index} onClick={() => selectCategory(index)}>
+                {groups.map((item, index) => <FadeUp as="button" delay={index * 75} className={`skills-category skills-tree-category${categoryIndex === index ? ' is-active' : ''}`} data-swarm="card" type="button" key={item.name} aria-pressed={categoryIndex === index} onClick={() => selectCategory(index)}>
                   <span>{item.name}</span>
-                </button>)}
+                </FadeUp>)}
               </div>
             </div>
 

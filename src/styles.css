@@ -31,10 +31,10 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-
 .eyebrow { display: inline-block; color: var(--text-muted); font-size: 0.625rem; }
 .section-title h2 { max-width: 690px; margin: 18px 0 14px; font-size: clamp(2.125rem, 4.5vw, 3.4375rem); font-weight: 550; line-height: 1.1; letter-spacing: -.055em; }
 .section-title > p { max-width: 540px; margin: 0; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8; }
-.section-pad { padding: clamp(48px, 6vw, 78px) 0; }
+.section-pad { padding: clamp(40px, 4.5vw, 60px) 0; }
 .inner-page { min-height: 70vh; padding-top: 1px; }
-.home-second-screen { display: flex; min-height: 100svh; flex-direction: column; }
-.home-second-screen .home-overview { display: flex; flex: 1; align-items: center; padding: clamp(32px, 4.5vh, 56px) 0; }
+.home-second-screen { display: flex; flex-direction: column; }
+.home-second-screen .home-overview { display: flex; flex: 0 0 auto; align-items: center; padding: clamp(24px, 3vw, 40px) 0; }
 .home-overview { position: relative; }
 .home-overview .container { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); align-items: start; gap: clamp(28px, 5vw, 72px); }
 .home-overview-heading { max-width: 650px; margin-bottom: 0; transform: translateY(-12px); }
@@ -142,7 +142,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-
 .identity-focus-chip i { width: 4px; height: 4px; border-radius: 50%; background: var(--cyan); }
 .identity-location { display: flex; align-items: center; gap: 10px; margin-top: 19px; color: var(--text-muted); font: 0.5625rem var(--mono); letter-spacing: .1em; }
 .identity-actions { display: flex; flex-wrap: wrap; gap: 70px; margin-top: 22px; margin-left: 30px; }
-.about.section-pad { padding-top: 72px; }
+.about.section-pad { padding-top: 52px; }
 .identity-layout { align-items: start; }
 .identity-layout > .identity-copy { position: relative; top: -45px; }
 .identity-visual-column { display: flex; min-width: 0; flex-direction: column; gap: 18px; }
@@ -3749,6 +3749,15 @@ html:not([data-theme='dark']) .hero::after {
 }
 @keyframes click-effect-burst { 0% { opacity: .95; transform: translate(-50%, -50%) scale(.35) rotate(-8deg); } 75% { opacity: .8; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(0); } }
 
+/* Shared one-time reveal for below-the-fold section headings and cards. */
+.fade-up { opacity: 0; transform: translateY(28px); transition-property: opacity, transform; transition-duration: .6s; transition-timing-function: cubic-bezier(.22, 1, .36, 1); }
+.fade-up.is-visible { opacity: 1; transform: translateY(0); }
+.fade-up.is-visible.cinematic-card:hover { transform: translateY(-4px); }
+.fade-up.is-visible.career-entry:hover { transform: translateY(-3px); }
+@media (prefers-reduced-motion: reduce) {
+  .fade-up, .fade-up.is-visible { opacity: 1; transform: none; transition: none; }
+}
+
 /* Two-second portfolio intro and directional section reveals. */
 .portfolio-loader { position: fixed; z-index: 3000; inset: 0; display: grid; place-items: center; overflow: hidden; color: #eef6ff; background: radial-gradient(ellipse at 50% 44%, #142746 0%, #090f1c 52%, #05080e 100%); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .38s ease, visibility 0s linear .38s; }
 .portfolio-loader.is-active { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
@@ -3767,9 +3776,7 @@ html:not([data-theme='dark']) .hero::after {
 .portfolio-loader-percent { margin-top: 5px; color: #55e6ff; font: 600 0.625rem var(--mono); letter-spacing: .04em; }
 @keyframes portfolio-loader-orbit { to { transform: rotate(360deg) scale(1.04); } }
 @keyframes portfolio-loader-image { from { opacity: .3; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
-#main [data-scroll-progress], .contact-footer [data-scroll-progress] { transform-origin: center; }
 @media (prefers-reduced-motion: reduce) {
   .portfolio-loader::before, .portfolio-loader::after, .portfolio-loader-bot img { animation: none; }
   .portfolio-loader-ring-progress { transition: none; }
-  #main [data-scroll-progress], .contact-footer [data-scroll-progress] { opacity: 1 !important; translate: none !important; will-change: auto !important; }
 }
